@@ -26,7 +26,7 @@ class SoundController extends Controller
 
         $file = $request->file('sound');
         $filename = Str::uuid() . '.' . $file->getClientOriginalExtension();
-        
+
         // Store the file in the public/sounds directory
         $file->storeAs('sounds', $filename, 'public');
 
@@ -51,13 +51,13 @@ class SoundController extends Controller
 
         $sound->update($request->only(['name', 'volume', 'loop']));
 
-        return redirect()->back();
+        return redirect()->back(303);
     }
 
     public function destroy(Sound $sound)
     {
         $sound->delete();
 
-        return redirect()->back()->with('message', 'Sound deleted successfully!');
+        return redirect()->back(303)->with('message', 'Sound deleted successfully!');
     }
 }

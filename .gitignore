@@ -24,3 +24,5 @@ yarn-error.log
 
 
 /resources/js/wayfinder/
+/resources/js/actions/
+/resources/js/routes/
