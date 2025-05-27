@@ -19,6 +19,8 @@ export default function SoundCard({ sound, masterVolume }: SoundCardProps) {
     const [editName, setEditName] = useState(sound.name);
     const [volume, setVolume] = useState(sound.volume);
     const [loop, setLoop] = useState(sound.loop);
+    const [currentTime, setCurrentTime] = useState(0);
+    const [duration, setDuration] = useState(0);
     const audioRef = useRef<HTMLAudioElement>(null);
 
     useEffect(() => {
@@ -32,6 +34,24 @@ export default function SoundCard({ sound, masterVolume }: SoundCardProps) {
             audioRef.current.loop = loop;
         }
     }, [loop]);
+
+    useEffect(() => {
+        const audio = audioRef.current;
+        if (!audio) return;
+
+        const updateTime = () => setCurrentTime(audio.currentTime);
+        const updateDuration = () => setDuration(audio.duration);
+
+        audio.addEventListener("timeupdate", updateTime);
+        audio.addEventListener("loadedmetadata", updateDuration);
+        audio.addEventListener("durationchange", updateDuration);
+
+        return () => {
+            audio.removeEventListener("timeupdate", updateTime);
+            audio.removeEventListener("loadedmetadata", updateDuration);
+            audio.removeEventListener("durationchange", updateDuration);
+        };
+    }, []);
 
     const togglePlay = () => {
         if (audioRef.current) {
@@ -54,6 +74,21 @@ export default function SoundCard({ sound, masterVolume }: SoundCardProps) {
     const handleLoopChange = (checked: boolean) => {
         setLoop(checked);
         updateSound({ loop: checked });
+    };
+
+    const handleSeek = (newTime: number[]) => {
+        const time = newTime[0];
+        if (audioRef.current) {
+            audioRef.current.currentTime = time;
+            setCurrentTime(time);
+        }
+    };
+
+    const formatTime = (seconds: number) => {
+        if (isNaN(seconds)) return "0:00";
+        const mins = Math.floor(seconds / 60);
+        const secs = Math.floor(seconds % 60);
+        return `${mins}:${secs.toString().padStart(2, "0")}`;
     };
 
     const updateSound = (data: Partial<Sound>) => {
@@ -176,6 +211,28 @@ export default function SoundCard({ sound, masterVolume }: SoundCardProps) {
                                 className="w-full"
                             />
                         </div>
+                    </div>
+
+                    {/* Progress Control */}
+                    <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                            <span className="text-xs text-muted-foreground">
+                                Progress
+                            </span>
+                            <span className="text-xs font-medium">
+                                {formatTime(currentTime)} /{" "}
+                                {formatTime(duration)}
+                            </span>
+                        </div>
+                        <Slider
+                            value={[currentTime]}
+                            onValueChange={handleSeek}
+                            max={duration || 0}
+                            min={0}
+                            step={0.1}
+                            className="w-full"
+                            disabled={!duration}
+                        />
                     </div>
 
                     {/* Bottom Controls */}
