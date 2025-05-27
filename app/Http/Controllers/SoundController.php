@@ -51,13 +51,13 @@ class SoundController extends Controller
 
         $sound->update($request->only(['name', 'volume', 'loop']));
 
-        return redirect()->back(303);
+        return redirect()->back();
     }
 
     public function destroy(Sound $sound)
     {
         $sound->delete();
 
-        return redirect()->back(303)->with('message', 'Sound deleted successfully!');
+        return redirect()->back()->with('message', 'Sound deleted successfully!');
     }
 }
