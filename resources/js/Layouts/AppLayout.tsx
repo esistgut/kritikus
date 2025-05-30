@@ -6,7 +6,8 @@ import {
   Music,
   User,
   Menu,
-  X
+  X,
+  Home
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -27,10 +28,16 @@ export default function AppLayout({ children }: AppLayoutProps) {
 
   const navigation: NavigationItem[] = [
     {
-      name: 'Soundboard',
+      name: 'Dashboard',
       href: '/',
+      icon: Home,
+      current: url === '/',
+    },
+    {
+      name: 'Soundboard',
+      href: '/soundboard',
       icon: Music,
-      current: url === '/' || url.startsWith('/soundboard'),
+      current: url.startsWith('/soundboard'),
     },
     {
       name: 'Characters',
