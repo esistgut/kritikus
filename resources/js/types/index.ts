@@ -117,11 +117,24 @@ export interface Spell {
     prepared?: boolean;
 }
 
+export interface User {
+    id: number;
+    name: string;
+    email: string;
+    email_verified_at?: string;
+    created_at: string;
+    updated_at: string;
+}
+
 export interface PageProps {
+    auth: {
+        user: User;
+    };
     sounds?: Sound[];
     characters?: Character[];
     character?: Character;
     flash?: {
         message?: string;
     };
+    [key: string]: any;
 }

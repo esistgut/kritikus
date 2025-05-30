@@ -10,12 +10,19 @@ use Illuminate\Validation\Rule;
 class CharacterController extends Controller
 {
     /**
+     * Create the controller instance.
+     */
+    public function __construct()
+    {
+        //$this->authorizeResource(Character::class, 'character');
+    }
+    /**
      * Display a listing of the resource.
      */
     public function index()
     {
         return Inertia::render('Characters/Index', [
-            'characters' => Character::orderBy('name')->get(),
+            'characters' => auth()->user()->characters()->orderBy('name')->get(),
         ]);
     }
 
@@ -80,7 +87,7 @@ class CharacterController extends Controller
             'spells_known' => 'array',
         ]);
 
-        Character::create($validated);
+        auth()->user()->characters()->create($validated);
 
         return redirect()->route('characters.index')
             ->with('message', 'Character created successfully!');

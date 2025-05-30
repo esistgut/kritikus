@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 class Character extends Model
 {
     protected $fillable = [
+        'user_id',
         'name',
         'class',
         'race',
@@ -93,5 +94,11 @@ class Character extends Model
         $modifier = $this->getAbilityModifier($this->{$ability});
         $proficient = $this->{$ability . '_save_proficiency'};
         return $modifier + ($proficient ? $this->getProficiencyBonus() : 0);
+    }
+
+    // Relationships
+    public function user()
+    {
+        return $this->belongsTo(User::class);
     }
 }
