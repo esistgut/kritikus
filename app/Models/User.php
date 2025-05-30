@@ -51,4 +51,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(Character::class);
     }
+
+    public function sounds()
+    {
+        return $this->hasMany(Sound::class);
+    }
 }

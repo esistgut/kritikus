@@ -10,10 +10,20 @@ use Inertia\Inertia;
 
 class SoundController extends Controller
 {
+    /**
+     * Create the controller instance.
+     */
+    public function __construct()
+    {
+        $this->authorizeResource(Sound::class, 'sound');
+    }
+
     public function index()
     {
+        $this->authorize('viewAny', Sound::class);
+
         return Inertia::render('Soundboard', [
-            'sounds' => Sound::all(),
+            'sounds' => auth()->user()->sounds()->get(),
         ]);
     }
 
@@ -30,7 +40,7 @@ class SoundController extends Controller
         // Store the file in the public/sounds directory
         $file->storeAs('sounds', $filename, 'public');
 
-        $sound = Sound::create([
+        $sound = auth()->user()->sounds()->create([
             'name' => $request->name ?: pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME),
             'filename' => $filename,
             'original_filename' => $file->getClientOriginalName(),
@@ -43,6 +53,8 @@ class SoundController extends Controller
 
     public function update(Request $request, Sound $sound)
     {
+        $this->authorize('update', $sound);
+
         $request->validate([
             'name' => 'required|string|max:255',
             'volume' => 'required|numeric|min:0|max:1',
@@ -56,6 +68,8 @@ class SoundController extends Controller
 
     public function destroy(Sound $sound)
     {
+        $this->authorize('delete', $sound);
+
         $sound->delete();
 
         return redirect()->back()->with('message', 'Sound deleted successfully!');

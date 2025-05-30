@@ -22,6 +22,7 @@ class DatabaseSeeder extends Seeder
 
         $this->call([
             CharacterSeeder::class,
+            SoundSeeder::class,
         ]);
     }
 }

@@ -39,4 +39,10 @@ class Sound extends Model
 
         return parent::delete();
     }
+
+    // Relationships
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
 }

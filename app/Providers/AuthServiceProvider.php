@@ -3,7 +3,9 @@
 namespace App\Providers;
 
 use App\Models\Character;
+use App\Models\Sound;
 use App\Policies\CharacterPolicy;
+use App\Policies\SoundPolicy;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 
 class AuthServiceProvider extends ServiceProvider
@@ -15,6 +17,7 @@ class AuthServiceProvider extends ServiceProvider
      */
     protected $policies = [
         Character::class => CharacterPolicy::class,
+        Sound::class => SoundPolicy::class,
     ];
 
     /**
