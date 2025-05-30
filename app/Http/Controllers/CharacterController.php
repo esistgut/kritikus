@@ -157,11 +157,15 @@ class CharacterController extends Controller
             'spell_save_dc' => 'integer',
             'spell_slots' => 'array',
             'spells_known' => 'array',
+            'tab' => 'nullable|string|in:overview,abilities,combat,spells,skills,character',
         ]);
 
         $character->update($validated);
 
-        return redirect()->route('characters.index')
+        // Get the tab parameter from the query string to maintain tab context
+        $tab = $request->query('tab', 'overview');
+
+        return redirect()->route('characters.show', ['character' => $character->id, 'tab' => $tab])
             ->with('message', 'Character updated successfully!');
     }
 

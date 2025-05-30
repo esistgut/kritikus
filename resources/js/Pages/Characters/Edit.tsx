@@ -1,16 +1,15 @@
-import React from 'react';
-import { Head, useForm } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Textarea } from '@/components/ui/textarea';
 import AppLayout from '@/Layouts/AppLayout';
+import { Character, PageProps } from '@/types';
+import { Head, Link, useForm } from '@inertiajs/react';
 import { ArrowLeft, Save } from 'lucide-react';
-import { Link } from '@inertiajs/react';
-import { PageProps, Character } from '@/types';
+import React, { useState } from 'react';
 
 interface CharacterEditProps extends PageProps {
   character: Character;
@@ -28,6 +27,13 @@ const LANGUAGES = [
 ];
 
 export default function Edit({ character }: CharacterEditProps) {
+  // Get the tab parameter from URL
+  const urlParams = new URLSearchParams(window.location.search);
+  const initialTab = urlParams.get('tab') || 'basic';
+
+  // State for active tab
+  const [activeTab, setActiveTab] = useState<string>(initialTab);
+
   const { data, setData, put, processing, errors } = useForm({
     name: character.name,
     class: character.class,
@@ -76,9 +82,26 @@ export default function Edit({ character }: CharacterEditProps) {
     spells_known: character.spells_known,
   });
 
+  // Map Edit tabs back to Show tabs
+  const getShowTab = (editTab: string): string => {
+    const tabMapping: { [key: string]: string } = {
+      'basic': 'overview',
+      'abilities': 'abilities',
+      'combat': 'combat',
+      'spells': 'spells',
+      'skills': 'skills',
+      'character': 'character'
+    };
+    return tabMapping[editTab] || 'overview';
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    put(`/characters/${character.id}`);
+    // Get the tab parameter based on current active tab
+    const tabToSend = getShowTab(activeTab);
+
+    // Send the tab as a query parameter in the URL
+    put(`/characters/${character.id}?tab=${tabToSend}`);
   };
 
   const getAbilityModifier = (score: number): number => {
@@ -141,9 +164,9 @@ export default function Edit({ character }: CharacterEditProps) {
         description: newSpell.description.trim() || 'No description provided.',
         prepared: newSpell.prepared
       };
-      
+
       setData('spells_known', [...(data.spells_known || []), spellToAdd]);
-      
+
       // Reset form
       setNewSpell({
         name: '',
@@ -162,7 +185,7 @@ export default function Edit({ character }: CharacterEditProps) {
   const handleEditSpell = (index: number) => {
     const spell = data.spells_known[index];
     setEditingSpellIndex(index);
-    setEditingSpell({ 
+    setEditingSpell({
       ...spell,
       prepared: spell.prepared || false
     });
@@ -182,7 +205,7 @@ export default function Edit({ character }: CharacterEditProps) {
         description: editingSpell.description.trim() || 'No description provided.',
         prepared: editingSpell.prepared
       };
-      
+
       setData('spells_known', newSpells);
       setEditingSpellIndex(null);
       setEditingSpell({
@@ -221,7 +244,7 @@ export default function Edit({ character }: CharacterEditProps) {
       <div className="p-6">
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center gap-4 mb-8">
-            <Link href={`/characters/${character.id}`}>
+            <Link href={`/characters/${character.id}?tab=${getShowTab(activeTab)}`}>
               <Button variant="outline" size="sm">
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Back to Character
@@ -234,7 +257,7 @@ export default function Edit({ character }: CharacterEditProps) {
           </div>
 
           <form onSubmit={handleSubmit}>
-            <Tabs defaultValue="basic" className="space-y-6">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
               <TabsList className="grid w-full grid-cols-6">
                 <TabsTrigger value="basic">Basic Info</TabsTrigger>
                 <TabsTrigger value="abilities">Abilities</TabsTrigger>
@@ -659,7 +682,7 @@ export default function Edit({ character }: CharacterEditProps) {
                             </Button>
                           </div>
                         )}
-                        
+
                         {data.spell_slots && data.spell_slots.length > 0 && (
                           <div className="flex space-x-2">
                             <Button
@@ -869,7 +892,7 @@ export default function Edit({ character }: CharacterEditProps) {
                             <p>No spells known yet.</p>
                           </div>
                         )}
-                        
+
                         <div className="border-t pt-4">
                           <h5 className="font-medium mb-3">Add New Spell</h5>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1034,7 +1057,7 @@ export default function Edit({ character }: CharacterEditProps) {
             </Tabs>
 
             <div className="flex justify-end gap-4 mt-8">
-              <Link href={`/characters/${character.id}`}>
+              <Link href={`/characters/${character.id}?tab=${getShowTab(activeTab)}`}>
                 <Button type="button" variant="outline">
                   Cancel
                 </Button>

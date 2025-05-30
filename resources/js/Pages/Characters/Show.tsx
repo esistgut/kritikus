@@ -7,16 +7,36 @@ import AppLayout from '@/Layouts/AppLayout';
 import { PageProps, Character } from '@/types';
 import { ArrowLeft, Edit, Trash2, Heart, Shield, Sparkles, Zap } from 'lucide-react';
 import { router } from '@inertiajs/react';
+import { useState } from 'react';
 
 interface CharacterShowProps extends PageProps {
   character: Character;
 }
 
 export default function Show({ character }: CharacterShowProps) {
+  // Get the tab parameter from URL or default to 'overview'
+  const urlParams = new URLSearchParams(window.location.search);
+  const initialTab = urlParams.get('tab') || 'overview';
+
+  const [activeTab, setActiveTab] = useState<string>(initialTab);
+
   const handleDelete = () => {
     if (confirm(`Are you sure you want to delete ${character.name}? This action cannot be undone.`)) {
       router.delete(`/characters/${character.id}`);
     }
+  };
+
+  // Map Show tabs to Edit tabs
+  const getEditTab = (showTab: string): string => {
+    const tabMapping: { [key: string]: string } = {
+      'overview': 'basic',
+      'abilities': 'abilities',
+      'combat': 'combat',
+      'spells': 'spells',
+      'skills': 'skills',
+      'character': 'character'
+    };
+    return tabMapping[showTab] || 'basic';
   };
 
   const getAbilityModifier = (score: number): string => {
@@ -95,7 +115,7 @@ export default function Show({ character }: CharacterShowProps) {
               </div>
             </div>
             <div className="flex gap-2">
-              <Link href={`/characters/${character.id}/edit`}>
+              <Link href={`/characters/${character.id}/edit?tab=${getEditTab(activeTab)}`}>
                 <Button variant="outline">
                   <Edit className="h-4 w-4 mr-2" />
                   Edit
@@ -108,7 +128,7 @@ export default function Show({ character }: CharacterShowProps) {
             </div>
           </div>
 
-          <Tabs defaultValue="overview" className="space-y-6">
+          <Tabs defaultValue="overview" className="space-y-6" value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="grid w-full grid-cols-6">
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="abilities">Abilities</TabsTrigger>
@@ -417,8 +437,8 @@ export default function Show({ character }: CharacterShowProps) {
                                 {slot.used} used
                               </div>
                               <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
-                                <div 
-                                  className="bg-blue-600 h-2 rounded-full" 
+                                <div
+                                  className="bg-blue-600 h-2 rounded-full"
                                   style={{ width: `${((slot.total - slot.used) / slot.total) * 100}%` }}
                                 ></div>
                               </div>
