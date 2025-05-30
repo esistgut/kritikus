@@ -14,13 +14,15 @@ class CharacterController extends Controller
      */
     public function __construct()
     {
-        //$this->authorizeResource(Character::class, 'character');
+        $this->authorizeResource(Character::class, 'character');
     }
     /**
      * Display a listing of the resource.
      */
     public function index()
     {
+        $this->authorize('viewAny', Character::class);
+
         return Inertia::render('Characters/Index', [
             'characters' => auth()->user()->characters()->orderBy('name')->get(),
         ]);
@@ -98,6 +100,8 @@ class CharacterController extends Controller
      */
     public function show(Character $character)
     {
+        $this->authorize('view', $character);
+
         return Inertia::render('Characters/Show', [
             'character' => $character,
         ]);
@@ -108,6 +112,8 @@ class CharacterController extends Controller
      */
     public function edit(Character $character)
     {
+        $this->authorize('update', $character);
+
         return Inertia::render('Characters/Edit', [
             'character' => $character,
         ]);

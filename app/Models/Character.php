@@ -8,7 +8,6 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 class Character extends Model
 {
     protected $fillable = [
-        'user_id',
         'name',
         'class',
         'race',
