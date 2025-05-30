@@ -1,7 +1,7 @@
 {
     "private": true,
     "type": "module",
-    "name": "kritikus-soundboard",
+    "name": "kritikus",
     "version": "1.0.0",
     "description": "A Laravel Inertia React TypeScript Soundboard Application",
     "scripts": {

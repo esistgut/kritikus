@@ -1,6 +1,10 @@
 
-# Kritikus Soundboard
-Kritikus Soundboard is a web-based soundboard application that allows users to play sound effects and audio clips. It is built using Laravel for the backend and React for the frontend.
+# Kritikus
+Kritikus is a comprehensive web-based tool for Dungeons & Dragons players and Dungeon Masters. Features include:
+
+- **Soundboards**: Upload, organize, and play sound clips during gameplay
+- **Character Sheets**: Create, manage, and track character information
+*More D&D tools coming soon!*
 
 ## Dev notes
 
