@@ -93,7 +93,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
       {/* Desktop sidebar */}
       <div className="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:z-50 lg:block lg:w-64 lg:bg-card lg:border-r">
         <div className="flex h-16 items-center px-4">
-          <h1 className="text-lg font-semibold">🎲 Kritikus Hub</h1>
+          <h1 className="text-lg font-semibold">Kritikus</h1>
         </div>
         <nav className="px-2 py-4">
           <ul className="space-y-2">

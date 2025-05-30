@@ -1,12 +1,10 @@
-import React from 'react';
-import { Head, Link } from '@inertiajs/react';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import AppLayout from '@/Layouts/AppLayout';
-import { PageProps, Character } from '@/types';
-import { Plus, Eye, Edit, Trash2, Swords, Heart, Shield } from 'lucide-react';
-import { router } from '@inertiajs/react';
+import { Character, PageProps } from '@/types';
+import { Head, Link, router } from '@inertiajs/react';
+import { Edit, Eye, Heart, Plus, Shield, Swords, Trash2 } from 'lucide-react';
 
 interface CharactersIndexProps extends PageProps {
   characters: Character[];
@@ -32,7 +30,7 @@ export default function Index({ characters }: CharactersIndexProps) {
         <div className="max-w-7xl mx-auto">
           <div className="flex justify-between items-center mb-8">
             <div>
-              <h1 className="text-3xl font-bold">🎲 Character Manager</h1>
+              <h1 className="text-3xl font-bold">Character Manager</h1>
               <p className="text-muted-foreground mt-2">
                 Manage your D&D 2024 character sheets
               </p>

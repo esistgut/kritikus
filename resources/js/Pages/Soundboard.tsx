@@ -1,12 +1,12 @@
-import React, { useState } from 'react';
-import { Head } from '@inertiajs/react';
-import { Slider } from '@/components/ui/slider';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import SoundCard from '@/components/SoundCard';
-import UploadSound from '@/components/UploadSound';
-import AppLayout from '@/Layouts/AppLayout';
-import { Volume2 } from 'lucide-react';
-import { PageProps } from '@/types';
+import SoundCard from "@/components/SoundCard";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Slider } from "@/components/ui/slider";
+import UploadSound from "@/components/UploadSound";
+import AppLayout from "@/Layouts/AppLayout";
+import { PageProps } from "@/types";
+import { Head } from "@inertiajs/react";
+import { Volume2 } from "lucide-react";
+import { useState } from "react";
 
 export default function Soundboard({ sounds = [] }: PageProps) {
   const [masterVolume, setMasterVolume] = useState(1);
@@ -59,7 +59,8 @@ export default function Soundboard({ sounds = [] }: PageProps) {
             <Card>
               <CardContent className="p-8 text-center">
                 <p className="text-muted-foreground text-lg">
-                  No sounds uploaded yet. Upload your first sound to get started!
+                  No sounds uploaded yet. Upload your first sound to get
+                  started!
                 </p>
               </CardContent>
             </Card>
