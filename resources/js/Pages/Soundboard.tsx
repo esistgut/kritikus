@@ -4,20 +4,21 @@ import { Slider } from '@/components/ui/slider';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import SoundCard from '@/components/SoundCard';
 import UploadSound from '@/components/UploadSound';
+import AppLayout from '@/Layouts/AppLayout';
 import { Volume2 } from 'lucide-react';
 import { PageProps } from '@/types';
 
-export default function Soundboard({ sounds }: PageProps) {
+export default function Soundboard({ sounds = [] }: PageProps) {
   const [masterVolume, setMasterVolume] = useState(1);
 
   return (
-    <>
+    <AppLayout>
       <Head title="Soundboard" />
-      
-      <div className="min-h-screen bg-background p-4">
+
+      <div className="p-4">
         <div className="max-w-7xl mx-auto">
           <h1 className="text-3xl font-bold text-center mb-8">🎵 Soundboard</h1>
-          
+
           {/* Master Volume Control */}
           <Card className="mb-8">
             <CardHeader>
@@ -65,6 +66,6 @@ export default function Soundboard({ sounds }: PageProps) {
           )}
         </div>
       </div>
-    </>
+    </AppLayout>
   );
 }
