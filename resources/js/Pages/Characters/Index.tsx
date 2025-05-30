@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import AppLayout from '@/Layouts/AppLayout';
 import { Character, PageProps } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
-import { Edit, Eye, Heart, Plus, Shield, Swords, Trash2 } from 'lucide-react';
+import { Edit, Eye, Heart, Plus, Shield, Sparkles, Swords, Trash2 } from 'lucide-react';
 
 interface CharactersIndexProps extends PageProps {
   characters: Character[];
@@ -105,6 +105,23 @@ export default function Index({ characters }: CharactersIndexProps) {
                           <div>{character.charisma} ({getAbilityModifier(character.charisma)})</div>
                         </div>
                       </div>
+
+                      {/* Spell Slots (if character has spellcasting) */}
+                      {character.spellcasting_class && character.spell_slots.length > 0 && (
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2 text-sm font-medium">
+                            <Sparkles className="h-4 w-4 text-purple-500" />
+                            <span>{character.spellcasting_class} Spells</span>
+                          </div>
+                          <div className="flex flex-wrap gap-1">
+                            {character.spell_slots.map((slot) => (
+                              <Badge key={slot.level} variant="outline" className="text-xs">
+                                L{slot.level}: {slot.total - slot.used}/{slot.total}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
 
                       {/* Action Buttons */}
                       <div className="flex justify-between pt-4 border-t">

@@ -1,4 +1,3 @@
-import React, { useState } from 'react';
 import { Head, useForm } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -165,10 +164,11 @@ export default function Create() {
 
           <form onSubmit={handleSubmit}>
             <Tabs defaultValue="basic" className="space-y-6">
-              <TabsList className="grid w-full grid-cols-5">
+              <TabsList className="grid w-full grid-cols-6">
                 <TabsTrigger value="basic">Basic Info</TabsTrigger>
                 <TabsTrigger value="abilities">Abilities</TabsTrigger>
                 <TabsTrigger value="combat">Combat</TabsTrigger>
+                <TabsTrigger value="spells">Spells</TabsTrigger>
                 <TabsTrigger value="skills">Skills & Proficiencies</TabsTrigger>
                 <TabsTrigger value="character">Character Details</TabsTrigger>
               </TabsList>
@@ -427,6 +427,51 @@ export default function Create() {
                     </CardContent>
                   </Card>
                 </div>
+              </TabsContent>
+
+              <TabsContent value="spells">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Spellcasting</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <Label htmlFor="spellcasting_class">Spellcasting Class</Label>
+                        <Input
+                          id="spellcasting_class"
+                          value={data.spellcasting_class}
+                          onChange={e => setData('spellcasting_class', e.target.value)}
+                          placeholder="e.g., Wizard, Cleric, Sorcerer"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="spell_attack_bonus">Spell Attack Bonus</Label>
+                        <Input
+                          id="spell_attack_bonus"
+                          type="number"
+                          value={data.spell_attack_bonus}
+                          onChange={e => setData('spell_attack_bonus', parseInt(e.target.value) || 0)}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="spell_save_dc">Spell Save DC</Label>
+                        <Input
+                          id="spell_save_dc"
+                          type="number"
+                          min="8"
+                          value={data.spell_save_dc}
+                          onChange={e => setData('spell_save_dc', parseInt(e.target.value) || 8)}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="text-sm text-muted-foreground p-4 bg-muted rounded-lg">
+                      <p className="font-medium mb-2">Note about Spell Management:</p>
+                      <p>Spell slots and individual spells can be configured after character creation through the character edit page. This allows for more detailed spell management including spell preparation, slot tracking, and spell descriptions.</p>
+                    </div>
+                  </CardContent>
+                </Card>
               </TabsContent>
 
               <TabsContent value="character">
