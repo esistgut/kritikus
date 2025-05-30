@@ -314,6 +314,62 @@ export default function Show({ character }: CharacterShowProps) {
               </div>
             </TabsContent>
 
+            <TabsContent value="combat">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Combat Statistics */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center">
+                      <Shield className="h-5 w-5 mr-2" />
+                      Combat Statistics
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex justify-between">
+                      <span className="font-medium">Armor Class:</span>
+                      <span className="text-lg font-bold">{character.armor_class}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="font-medium">Initiative:</span>
+                      <span className="text-lg font-bold">{character.initiative >= 0 ? '+' : ''}{character.initiative}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="font-medium">Speed:</span>
+                      <span className="text-lg font-bold">{character.speed} ft</span>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Hit Points and Hit Dice */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center">
+                      <Heart className="h-5 w-5 mr-2 text-red-500" />
+                      Hit Points & Hit Dice
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex justify-between">
+                      <span className="font-medium">Hit Point Maximum:</span>
+                      <span className="text-lg font-bold">{character.hit_point_maximum}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="font-medium">Current Hit Points:</span>
+                      <span className="text-lg font-bold text-red-600">{character.current_hit_points}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="font-medium">Temporary Hit Points:</span>
+                      <span className="text-lg font-bold text-blue-600">{character.temporary_hit_points}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="font-medium">Hit Dice:</span>
+                      <span className="text-lg font-bold">{character.hit_dice}/{character.hit_dice_total}</span>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+
             <TabsContent value="skills">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Card>
