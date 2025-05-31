@@ -56,6 +56,20 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Auto-Login User ID (Local Development Only)
+    |--------------------------------------------------------------------------
+    |
+    | This setting allows automatic authentication of a specific user when
+    | the application is running in local environment. This is useful for
+    | automated testing and development tools that need to bypass authentication.
+    | Only works when APP_ENV is set to 'local'.
+    |
+    */
+
+    'auto_login_user_id' => env('AUTO_LOGIN_USER_ID'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Timezone
     |--------------------------------------------------------------------------
     |
