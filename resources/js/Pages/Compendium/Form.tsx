@@ -296,6 +296,223 @@ export default function CompendiumForm({ entry, isEdit = false }: CompendiumForm
                     </div>
                 );
 
+            case 'monster':
+                return (
+                    <div className="space-y-4">
+                        <h3 className="text-lg font-semibold">Monster Details</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <Label htmlFor="type">Type</Label>
+                                <Select
+                                    value={data.specific_data.type || ''}
+                                    onValueChange={(value: string) => updateSpecificData('type', value)}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select type" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="aberration">Aberration</SelectItem>
+                                        <SelectItem value="beast">Beast</SelectItem>
+                                        <SelectItem value="celestial">Celestial</SelectItem>
+                                        <SelectItem value="construct">Construct</SelectItem>
+                                        <SelectItem value="dragon">Dragon</SelectItem>
+                                        <SelectItem value="elemental">Elemental</SelectItem>
+                                        <SelectItem value="fey">Fey</SelectItem>
+                                        <SelectItem value="fiend">Fiend</SelectItem>
+                                        <SelectItem value="giant">Giant</SelectItem>
+                                        <SelectItem value="humanoid">Humanoid</SelectItem>
+                                        <SelectItem value="monstrosity">Monstrosity</SelectItem>
+                                        <SelectItem value="ooze">Ooze</SelectItem>
+                                        <SelectItem value="plant">Plant</SelectItem>
+                                        <SelectItem value="undead">Undead</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div>
+                                <Label htmlFor="size">Size</Label>
+                                <Select
+                                    value={data.specific_data.size || ''}
+                                    onValueChange={(value: string) => updateSpecificData('size', value)}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select size" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="Tiny">Tiny</SelectItem>
+                                        <SelectItem value="Small">Small</SelectItem>
+                                        <SelectItem value="Medium">Medium</SelectItem>
+                                        <SelectItem value="Large">Large</SelectItem>
+                                        <SelectItem value="Huge">Huge</SelectItem>
+                                        <SelectItem value="Gargantuan">Gargantuan</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div>
+                                <Label htmlFor="alignment">Alignment</Label>
+                                <Input
+                                    id="alignment"
+                                    value={data.specific_data.alignment || ''}
+                                    onChange={(e) => updateSpecificData('alignment', e.target.value)}
+                                    placeholder="e.g., Chaotic Evil"
+                                />
+                            </div>
+                            <div>
+                                <Label htmlFor="cr">Challenge Rating</Label>
+                                <Input
+                                    id="cr"
+                                    value={data.specific_data.cr || ''}
+                                    onChange={(e) => updateSpecificData('cr', e.target.value)}
+                                    placeholder="e.g., 1/4, 1, 10"
+                                />
+                            </div>
+                            <div>
+                                <Label htmlFor="hp">Hit Points</Label>
+                                <Input
+                                    id="hp"
+                                    value={data.specific_data.hp || ''}
+                                    onChange={(e) => updateSpecificData('hp', e.target.value)}
+                                    placeholder="e.g., 58 (9d8 + 18)"
+                                />
+                            </div>
+                            <div>
+                                <Label htmlFor="speed">Speed</Label>
+                                <Input
+                                    id="speed"
+                                    value={data.specific_data.speed || ''}
+                                    onChange={(e) => updateSpecificData('speed', e.target.value)}
+                                    placeholder="e.g., 30 ft., fly 60 ft."
+                                />
+                            </div>
+                        </div>
+                    </div>
+                );
+
+            case 'class':
+                return (
+                    <div className="space-y-4">
+                        <h3 className="text-lg font-semibold">Class Details</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <Label htmlFor="hd">Hit Die</Label>
+                                <Select
+                                    value={data.specific_data.hd?.toString() || ''}
+                                    onValueChange={(value: string) => updateSpecificData('hd', parseInt(value))}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select hit die" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="6">d6</SelectItem>
+                                        <SelectItem value="8">d8</SelectItem>
+                                        <SelectItem value="10">d10</SelectItem>
+                                        <SelectItem value="12">d12</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div>
+                                <Label htmlFor="numSkills">Number of Skills</Label>
+                                <Input
+                                    id="numSkills"
+                                    type="number"
+                                    min="0"
+                                    max="10"
+                                    value={data.specific_data.numSkills || ''}
+                                    onChange={(e) => updateSpecificData('numSkills', parseInt(e.target.value) || null)}
+                                />
+                            </div>
+                            <div>
+                                <Label htmlFor="armor">Armor Proficiencies</Label>
+                                <Input
+                                    id="armor"
+                                    value={data.specific_data.armor || ''}
+                                    onChange={(e) => updateSpecificData('armor', e.target.value)}
+                                    placeholder="e.g., Light armor, medium armor"
+                                />
+                            </div>
+                            <div>
+                                <Label htmlFor="weapons">Weapon Proficiencies</Label>
+                                <Input
+                                    id="weapons"
+                                    value={data.specific_data.weapons || ''}
+                                    onChange={(e) => updateSpecificData('weapons', e.target.value)}
+                                    placeholder="e.g., Simple weapons, martial weapons"
+                                />
+                            </div>
+                            <div>
+                                <Label htmlFor="spellAbility">Spellcasting Ability</Label>
+                                <Select
+                                    value={data.specific_data.spellAbility || ''}
+                                    onValueChange={(value: string) => updateSpecificData('spellAbility', value)}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select ability" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="">None</SelectItem>
+                                        <SelectItem value="Intelligence">Intelligence</SelectItem>
+                                        <SelectItem value="Wisdom">Wisdom</SelectItem>
+                                        <SelectItem value="Charisma">Charisma</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div>
+                                <Label htmlFor="wealth">Starting Wealth</Label>
+                                <Input
+                                    id="wealth"
+                                    value={data.specific_data.wealth || ''}
+                                    onChange={(e) => updateSpecificData('wealth', e.target.value)}
+                                    placeholder="e.g., 4d4 × 10 gp"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                );
+
+            case 'background':
+                return (
+                    <div className="space-y-4">
+                        <h3 className="text-lg font-semibold">Background Details</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <Label htmlFor="proficiency">Skill Proficiencies</Label>
+                                <Input
+                                    id="proficiency"
+                                    value={data.specific_data.proficiency || ''}
+                                    onChange={(e) => updateSpecificData('proficiency', e.target.value)}
+                                    placeholder="e.g., Deception, Stealth"
+                                />
+                            </div>
+                            <div>
+                                <Label htmlFor="languages">Languages</Label>
+                                <Input
+                                    id="languages"
+                                    value={data.specific_data.languages || ''}
+                                    onChange={(e) => updateSpecificData('languages', e.target.value)}
+                                    placeholder="e.g., Two of your choice"
+                                />
+                            </div>
+                            <div>
+                                <Label htmlFor="equipment">Equipment</Label>
+                                <Input
+                                    id="equipment"
+                                    value={data.specific_data.equipment || ''}
+                                    onChange={(e) => updateSpecificData('equipment', e.target.value)}
+                                    placeholder="e.g., Thieves' tools, leather armor"
+                                />
+                            </div>
+                            <div>
+                                <Label htmlFor="gold">Starting Gold</Label>
+                                <Input
+                                    id="gold"
+                                    value={data.specific_data.gold || ''}
+                                    onChange={(e) => updateSpecificData('gold', e.target.value)}
+                                    placeholder="e.g., 15 gp"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                );
+
             case 'feat':
                 return (
                     <div className="space-y-4">

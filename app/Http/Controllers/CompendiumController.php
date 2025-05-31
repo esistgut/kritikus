@@ -215,12 +215,20 @@ class CompendiumController extends Controller
 
         switch ($type) {
             case 'spell':
+                // Ensure required fields are always provided for spells with defaults
+                $specificData['level'] = $specificData['level'] ?? 0;
+                $specificData['school'] = $specificData['school'] ?? 'evocation';
                 CompendiumSpell::create($specificData);
                 break;
             case 'item':
+                // Ensure required fields are always provided for items with defaults
+                $specificData['type'] = $specificData['type'] ?? 'misc';
                 CompendiumItem::create($specificData);
                 break;
             case 'monster':
+                // Ensure required fields are always provided for monsters with defaults
+                $specificData['type'] = $specificData['type'] ?? 'humanoid';
+                $specificData['size'] = $specificData['size'] ?? 'Medium';
                 CompendiumMonster::create($specificData);
                 break;
             case 'race':
