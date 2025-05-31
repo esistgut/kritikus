@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { CompendiumData } from '@/types';
 import { CharacterFormData } from '../CharacterForm';
+import SpellList from '../SpellList';
 
 interface SpellsTabProps {
   data: CharacterFormData;
@@ -28,6 +29,13 @@ export default function SpellsTab({ data, setData, compendiumData }: SpellsTabPr
       spell.compendium_entry?.name.toLowerCase().includes(spellSearchTerm.toLowerCase())
     );
   }, [compendiumData.spells, spellSearchTerm]);
+
+  // Get selected spells with their full data
+  const selectedSpells = useMemo(() => {
+    return data.selected_spell_ids.map(spellId =>
+      compendiumData.spells.find(spell => spell.compendium_entry_id === spellId)
+    ).filter(spell => spell !== undefined);
+  }, [data.selected_spell_ids, compendiumData.spells]);
 
   return (
     <div className="space-y-6">
@@ -68,6 +76,15 @@ export default function SpellsTab({ data, setData, compendiumData }: SpellsTabPr
           </div>
         </CardContent>
       </Card>
+
+      {/* Selected Spells Section */}
+      <SpellList
+        title="Selected Spells"
+        spells={selectedSpells}
+        showRemoveButton={true}
+        onRemoveSpell={(spellId) => handleSpellSelection(spellId, false)}
+        emptyMessage="No spells selected. Choose spells from the 'Available Spells' section below."
+      />
 
       <Card>
         <CardHeader>

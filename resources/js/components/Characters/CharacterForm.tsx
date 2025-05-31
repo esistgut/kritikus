@@ -1,18 +1,18 @@
-import React, { useState } from 'react';
-import { Head, Link, useForm } from '@inertiajs/react';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import AppLayout from '@/Layouts/AppLayout';
-import { ArrowLeft, Save } from 'lucide-react';
-import { Character, CompendiumData, PageProps } from '@/types';
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import AppLayout from "@/Layouts/AppLayout";
+import { Character, CompendiumData, PageProps } from "@/types";
+import { Head, Link, useForm } from "@inertiajs/react";
+import { ArrowLeft, Save } from "lucide-react";
+import React, { useState } from "react";
 
-import BasicInfoTab from './tabs/BasicInfoTab';
-import AbilitiesTab from './tabs/AbilitiesTab';
-import CombatTab from './tabs/CombatTab';
-import SpellsTab from './tabs/SpellsTab';
-import InventoryTab from './tabs/InventoryTab';
-import SkillsTab from './tabs/SkillsTab';
-import CharacterDetailsTab from './tabs/CharacterDetailsTab';
+import CharacterDetailsTab from "@/components/Characters/tabs/CharacterDetailsTab";
+import CombatTab from "@/components/Characters/tabs/CombatTab";
+import InventoryTab from "@/components/Characters/tabs/InventoryTab";
+import SkillsTab from "@/components/Characters/tabs/SkillsTab";
+import SpellsTab from "@/components/Characters/tabs/SpellsTab";
+import AbilitiesTab from "./tabs/AbilitiesTab";
+import BasicInfoTab from "./tabs/BasicInfoTab";
 
 export interface CharacterFormData {
   name: string;
@@ -67,11 +67,11 @@ export interface CharacterFormData {
 interface CharacterFormProps extends PageProps {
   character?: Character;
   compendiumData: CompendiumData;
-  mode: 'create' | 'edit';
+  mode: "create" | "edit";
 }
 
 const getDefaultFormData = (): CharacterFormData => ({
-  name: '',
+  name: "",
   race_id: 0,
   class_id: 0,
   background_id: 0,
@@ -102,19 +102,19 @@ const getDefaultFormData = (): CharacterFormData => ({
   charisma_save_proficiency: false,
   skill_proficiencies: [],
   skill_expertises: [],
-  languages: ['Common'],
+  languages: ["Common"],
   armor_proficiencies: [],
   weapon_proficiencies: [],
   tool_proficiencies: [],
   features_and_traits: [],
   attacks_and_spells: [],
   equipment: [],
-  personality_traits: '',
-  ideals: '',
-  bonds: '',
-  flaws: '',
-  backstory: '',
-  spellcasting_class: '',
+  personality_traits: "",
+  ideals: "",
+  bonds: "",
+  flaws: "",
+  backstory: "",
+  spellcasting_class: "",
   spell_attack_bonus: 0,
   spell_save_dc: 8,
   spell_slots: [],
@@ -159,35 +159,40 @@ const getFormDataFromCharacter = (character: Character): CharacterFormData => ({
   features_and_traits: character.features_and_traits,
   attacks_and_spells: character.attacks_and_spells,
   equipment: character.equipment,
-  personality_traits: character.personality_traits || '',
-  ideals: character.ideals || '',
-  bonds: character.bonds || '',
-  flaws: character.flaws || '',
-  backstory: character.backstory || '',
-  spellcasting_class: character.spellcasting_class || '',
+  personality_traits: character.personality_traits || "",
+  ideals: character.ideals || "",
+  bonds: character.bonds || "",
+  flaws: character.flaws || "",
+  backstory: character.backstory || "",
+  spellcasting_class: character.spellcasting_class || "",
   spell_attack_bonus: character.spell_attack_bonus,
   spell_save_dc: character.spell_save_dc,
   spell_slots: character.spell_slots,
 });
 
-export default function CharacterForm({ character, compendiumData, mode }: CharacterFormProps) {
+export default function CharacterForm({
+  character,
+  compendiumData,
+  mode,
+}: CharacterFormProps) {
   // Get the tab parameter from URL
   const urlParams = new URLSearchParams(window.location.search);
-  const initialTab = urlParams.get('tab') || 'basic';
+  const initialTab = urlParams.get("tab") || "basic";
 
   // State for active tab
   const [activeTab, setActiveTab] = useState<string>(initialTab);
 
-  const initialData = mode === 'edit' && character
-    ? getFormDataFromCharacter(character)
-    : getDefaultFormData();
+  const initialData =
+    mode === "edit" && character
+      ? getFormDataFromCharacter(character)
+      : getDefaultFormData();
 
   const { data, setData, post, put, processing, errors } = useForm(initialData);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (mode === 'create') {
-      post('/characters');
+    if (mode === "create") {
+      post("/characters");
     } else if (character) {
       put(`/characters/${character.id}`);
     }
@@ -196,42 +201,60 @@ export default function CharacterForm({ character, compendiumData, mode }: Chara
   // Map Edit tabs back to Show tabs for cancel button
   const getShowTab = (editTab: string): string => {
     const tabMapping: { [key: string]: string } = {
-      'basic': 'overview',
-      'abilities': 'abilities',
-      'combat': 'combat',
-      'spells': 'spells',
-      'inventory': 'inventory',
-      'skills': 'skills',
-      'character': 'character',
+      basic: "overview",
+      abilities: "abilities",
+      combat: "combat",
+      spells: "spells",
+      inventory: "inventory",
+      skills: "skills",
+      character: "character",
     };
-    return tabMapping[editTab] || 'overview';
+    return tabMapping[editTab] || "overview";
   };
 
   return (
     <AppLayout>
-      <Head title={mode === 'create' ? 'Create Character' : `Edit ${character?.name}`} />
+      <Head
+        title={
+          mode === "create" ? "Create Character" : `Edit ${character?.name}`
+        }
+      />
 
       <div className="p-6">
         <div className="max-w-6xl mx-auto">
           <div className="flex items-center gap-4 mb-8">
-            <Link href={mode === 'create' ? '/characters' : `/characters/${character?.id}?tab=${getShowTab(activeTab)}`}>
+            <Link
+              href={
+                mode === "create"
+                  ? "/characters"
+                  : `/characters/${character?.id}?tab=${getShowTab(activeTab)}`
+              }
+            >
               <Button variant="outline" size="sm">
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                {mode === 'create' ? 'Back to Characters' : 'Back to Character'}
+                {mode === "create" ? "Back to Characters" : "Back to Character"}
               </Button>
             </Link>
             <div>
               <h1 className="text-3xl font-bold">
-                {mode === 'create' ? 'Create New Character' : `Edit ${character?.name}`}
+                {mode === "create"
+                  ? "Create New Character"
+                  : `Edit ${character?.name}`}
               </h1>
               <p className="text-muted-foreground">
-                {mode === 'create' ? 'Build your D&D 2024 character sheet' : 'Update your D&D 2024 character sheet'}
+                {mode === "create"
+                  ? "Build your D&D 2024 character sheet"
+                  : "Update your D&D 2024 character sheet"}
               </p>
             </div>
           </div>
 
           <form onSubmit={handleSubmit}>
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+            <Tabs
+              value={activeTab}
+              onValueChange={setActiveTab}
+              className="space-y-6"
+            >
               <TabsList className="grid w-full grid-cols-7">
                 <TabsTrigger value="basic">Basic Info</TabsTrigger>
                 <TabsTrigger value="abilities">Abilities</TabsTrigger>
@@ -252,17 +275,11 @@ export default function CharacterForm({ character, compendiumData, mode }: Chara
               </TabsContent>
 
               <TabsContent value="abilities">
-                <AbilitiesTab
-                  data={data}
-                  setData={setData}
-                />
+                <AbilitiesTab data={data} setData={setData} />
               </TabsContent>
 
               <TabsContent value="combat">
-                <CombatTab
-                  data={data}
-                  setData={setData}
-                />
+                <CombatTab data={data} setData={setData} />
               </TabsContent>
 
               <TabsContent value="spells">
@@ -282,22 +299,24 @@ export default function CharacterForm({ character, compendiumData, mode }: Chara
               </TabsContent>
 
               <TabsContent value="skills">
-                <SkillsTab
-                  data={data}
-                  setData={setData}
-                />
+                <SkillsTab data={data} setData={setData} />
               </TabsContent>
 
               <TabsContent value="character">
-                <CharacterDetailsTab
-                  data={data}
-                  setData={setData}
-                />
+                <CharacterDetailsTab data={data} setData={setData} />
               </TabsContent>
             </Tabs>
 
             <div className="flex justify-end gap-4 mt-8">
-              <Link href={mode === 'create' ? '/characters' : `/characters/${character?.id}?tab=${getShowTab(activeTab)}`}>
+              <Link
+                href={
+                  mode === "create"
+                    ? "/characters"
+                    : `/characters/${character?.id}?tab=${getShowTab(
+                        activeTab
+                      )}`
+                }
+              >
                 <Button type="button" variant="outline">
                   Cancel
                 </Button>
@@ -305,9 +324,12 @@ export default function CharacterForm({ character, compendiumData, mode }: Chara
               <Button type="submit" disabled={processing}>
                 <Save className="h-4 w-4 mr-2" />
                 {processing
-                  ? (mode === 'create' ? 'Creating...' : 'Saving...')
-                  : (mode === 'create' ? 'Create Character' : 'Save Changes')
-                }
+                  ? mode === "create"
+                    ? "Creating..."
+                    : "Saving..."
+                  : mode === "create"
+                  ? "Create Character"
+                  : "Save Changes"}
               </Button>
             </div>
           </form>

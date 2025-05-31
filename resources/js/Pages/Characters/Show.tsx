@@ -8,6 +8,7 @@ import { PageProps, Character } from '@/types';
 import { ArrowLeft, Edit, Trash2, Heart, Shield, Sparkles, Zap } from 'lucide-react';
 import { router } from '@inertiajs/react';
 import { useState } from 'react';
+import SpellList from '@/components/Characters/SpellList';
 
 interface CharacterShowProps extends PageProps {
   character: Character;
@@ -511,63 +512,27 @@ export default function Show({ character }: CharacterShowProps) {
 
                   {/* Known Spells */}
                   {character.selectedSpells && character.selectedSpells.length > 0 && (
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>Known Spells ({character.selectedSpells.length})</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-4">
-                          {Array.from(new Set(character.selectedSpells.map(entry => entry.spell?.level || 0))).sort((a, b) => a - b).map(level => (
-                            <div key={level}>
-                              <h4 className="font-semibold mb-3">
-                                {level === 0 ? 'Cantrips' : `Level ${level} Spells`}
-                              </h4>
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {character.selectedSpells!
-                                  .filter(entry => entry.spell?.level === level)
-                                  .map((entry, index) => {
-                                    const spellData = entry.spell;
-                                    return (
-                                      <Card key={index} className="p-4">
-                                        <div className="flex justify-between items-start mb-2">
-                                          <h5 className="font-semibold">{entry.name}</h5>
-                                          <div className="flex gap-1">
-                                            <Badge variant="secondary" className="text-xs">
-                                              {spellData?.school === 'EV' ? 'Evocation' :
-                                               spellData?.school === 'AB' ? 'Abjuration' :
-                                               spellData?.school === 'CO' ? 'Conjuration' :
-                                               spellData?.school === 'DI' ? 'Divination' :
-                                               spellData?.school === 'EN' ? 'Enchantment' :
-                                               spellData?.school === 'IL' ? 'Illusion' :
-                                               spellData?.school === 'NE' ? 'Necromancy' :
-                                               spellData?.school === 'TR' ? 'Transmutation' :
-                                               spellData?.school || 'Unknown'}
-                                            </Badge>
-                                            {spellData?.ritual && (
-                                              <Badge variant="outline" className="text-xs">
-                                                Ritual
-                                              </Badge>
-                                            )}
-                                          </div>
-                                        </div>
-                                        <div className="text-sm text-muted-foreground space-y-1">
-                                          <div><strong>Casting Time:</strong> {spellData?.time || '1 action'}</div>
-                                          <div><strong>Range:</strong> {spellData?.range || 'Unknown'}</div>
-                                          <div><strong>Components:</strong> {spellData?.components || 'Unknown'}</div>
-                                          <div><strong>Duration:</strong> {spellData?.duration || 'Unknown'}</div>
-                                        </div>
-                                        <div className="mt-3 text-sm">
-                                          <strong>Description:</strong> {entry.text || 'No description available.'}
-                                        </div>
-                                      </Card>
-                                    );
-                                  })}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
+                    <SpellList
+                      title="Known Spells"
+                      spells={character.selectedSpells.map(entry => ({
+                        id: entry.spell?.id,
+                        compendium_entry_id: entry.id,
+                        level: entry.spell?.level || 0,
+                        school: entry.spell?.school || 'Unknown',
+                        casting_time: entry.spell?.time,
+                        range: entry.spell?.range,
+                        components: entry.spell?.components,
+                        duration: entry.spell?.duration,
+                        ritual: entry.spell?.ritual || false,
+                        concentration: false, // Default to false since the field may not exist in older data
+                        compendium_entry: {
+                          name: entry.name,
+                          text: entry.text
+                        }
+                      }))}
+                      showRemoveButton={false}
+                      emptyMessage="No spells known yet."
+                    />
                   )}
 
                   {(!character.selectedSpells || character.selectedSpells.length === 0) && character.spell_slots.length === 0 && (
