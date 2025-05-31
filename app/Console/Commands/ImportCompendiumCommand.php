@@ -20,14 +20,24 @@ class ImportCompendiumCommand extends Command
      *
      * @var string
      */
-    protected $signature = 'compendium:import {file=database/Complete_Compendium_2024.xml} {--clean : Clean existing system data before import}';
+    protected $signature = 'compendium:import {file=database/Complete_Compendium_2024.xml}
+                            {--clean : Clean existing system data before import}
+                            {--update : Update existing entries by name instead of cleaning all}
+                            {--dry-run : Show what would be imported/updated without making changes}';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Import D&D 5e compendium data from XML file';
+    protected $description = 'Import D&D 5e compendium data from XML file. Use --clean for full refresh, --update for name-based updates, or --dry-run to preview changes.';
+
+    private $importStats = [
+        'created' => 0,
+        'updated' => 0,
+        'skipped' => 0,
+        'deleted' => 0
+    ];
 
     /**
      * Execute the console command.
@@ -41,12 +51,27 @@ class ImportCompendiumCommand extends Command
             return 1;
         }
 
-        if ($this->option('clean')) {
-            $this->info('Cleaning existing system data...');
-            $this->cleanSystemData();
+        // Validate options
+        if ($this->option('clean') && $this->option('update')) {
+            $this->error('Cannot use both --clean and --update options together');
+            return 1;
         }
 
-        $this->info('Loading XML file...');
+        if ($this->option('dry-run')) {
+            $this->info('🔍 DRY RUN MODE - No changes will be made');
+        }
+
+        if ($this->option('clean')) {
+            $this->info('🧹 Cleaning existing system data...');
+            if (!$this->option('dry-run')) {
+                $this->cleanSystemData();
+            } else {
+                $count = CompendiumEntry::where('is_system', true)->count();
+                $this->info("Would delete {$count} existing system entries");
+            }
+        }
+
+        $this->info('📖 Loading XML file...');
         $xml = simplexml_load_file($filePath);
 
         if (!$xml) {
@@ -54,61 +79,188 @@ class ImportCompendiumCommand extends Command
             return 1;
         }
 
-        $this->info('Starting import...');
+        $this->info('🚀 Starting import...');
+        $this->info('Strategy: ' . ($this->option('clean') ? 'Clean and reimport all' :
+                                   ($this->option('update') ? 'Update existing by name' : 'Create new entries only')));
 
-        DB::transaction(function () use ($xml) {
-            $this->importItems($xml);
-            $this->importSpells($xml);
-            $this->importMonsters($xml);
-            $this->importRaces($xml);
-            $this->importClasses($xml);
-            $this->importBackgrounds($xml);
-            $this->importFeats($xml);
-        });
+        if (!$this->option('dry-run')) {
+            DB::transaction(function () use ($xml) {
+                $this->importItems($xml);
+                $this->importSpells($xml);
+                $this->importMonsters($xml);
+                $this->importRaces($xml);
+                $this->importClasses($xml);
+                $this->importBackgrounds($xml);
+                $this->importFeats($xml);
+            });
+        } else {
+            $this->previewImport($xml);
+        }
 
-        $this->info('Import completed successfully!');
+        $this->displayImportStats();
+
+        if (!$this->option('dry-run')) {
+            $this->info('✅ Import completed successfully!');
+        } else {
+            $this->info('✅ Dry run completed - no changes were made');
+        }
+
         return 0;
+    }
+
+    private function displayImportStats()
+    {
+        $this->newLine();
+        $this->info('📊 Import Statistics:');
+        $this->table(
+            ['Action', 'Count'],
+            [
+                ['Created', $this->importStats['created']],
+                ['Updated', $this->importStats['updated']],
+                ['Skipped', $this->importStats['skipped']],
+                ['Deleted', $this->importStats['deleted']]
+            ]
+        );
+    }
+
+    private function previewImport($xml)
+    {
+        $this->info('📋 Preview of changes:');
+
+        foreach (['item', 'spell', 'monster', 'race', 'class', 'background', 'feat'] as $type) {
+            $entries = $xml->xpath("//{$type}");
+            $count = count($entries);
+
+            if ($this->option('update')) {
+                $existing = CompendiumEntry::where('entry_type', $type)->where('is_system', true)->count();
+                $this->info("- {$type}s: {$count} in XML, {$existing} existing system entries");
+            } else {
+                $this->info("- {$type}s: {$count} would be imported");
+            }
+        }
     }
 
     private function cleanSystemData()
     {
+        $deleted = CompendiumEntry::where('is_system', true)->count();
         CompendiumEntry::where('is_system', true)->delete();
-        $this->info('Existing system data cleaned.');
+        $this->importStats['deleted'] = $deleted;
+        $this->info("Existing system data cleaned: {$deleted} entries deleted.");
+    }
+
+    /**
+     * Create or update a compendium entry based on name matching
+     *
+     * @param string $name Entry name
+     * @param string $entryType Entry type (spell, item, etc.)
+     * @param array $entryData Base entry data
+     * @param callable $specificDataCallback Callback to generate specific data
+     * @param string $specificModelClass Model class for specific data
+     * @return string Action taken: 'created', 'updated', or 'skipped'
+     */
+    private function createOrUpdateEntry(string $name, string $entryType, array $entryData, callable $specificDataCallback, string $specificModelClass): string
+    {
+        if ($this->option('dry-run')) {
+            return 'created'; // For dry run, assume creation
+        }
+
+        // Check if entry exists with same name and type
+        $existingEntry = CompendiumEntry::where('name', $name)
+            ->where('entry_type', $entryType)
+            ->where('is_system', true)
+            ->first();
+
+        if ($existingEntry && $this->option('update')) {
+            // Update existing entry
+            $existingEntry->update($entryData);
+
+            // Update specific data
+            $specificData = $specificDataCallback($existingEntry);
+            $existingEntry->{$this->getRelationshipName($entryType)}()->updateOrCreate(
+                ['compendium_entry_id' => $existingEntry->id],
+                $specificData
+            );
+
+            return 'updated';
+        } elseif ($existingEntry && !$this->option('clean') && !$this->option('update')) {
+            // Skip if exists and not updating
+            return 'skipped';
+        } else {
+            // Create new entry
+            $entry = CompendiumEntry::create([
+                'name' => $name,
+                'entry_type' => $entryType,
+                'is_system' => true,
+                ...$entryData
+            ]);
+
+            // Create specific data
+            $specificData = $specificDataCallback($entry);
+            $specificModelClass::create($specificData);
+
+            return 'created';
+        }
+    }
+
+    /**
+     * Get the relationship name for a given entry type
+     */
+    private function getRelationshipName(string $entryType): string
+    {
+        return match($entryType) {
+            'spell' => 'spell',
+            'item' => 'item',
+            'monster' => 'monster',
+            'race' => 'race',
+            'class' => 'dndClass',
+            'background' => 'background',
+            'feat' => 'feat',
+            default => $entryType,
+        };
+    }
+
+    /**
+     * Update import statistics
+     */
+    private function updateImportStats(string $action): void
+    {
+        if (isset($this->importStats[$action])) {
+            $this->importStats[$action]++;
+        }
     }
 
     private function importItems($xml)
     {
         $items = $xml->xpath('//item');
-        $this->info("Importing " . count($items) . " items...");
+        $this->info("Processing " . count($items) . " items...");
 
         $progressBar = $this->output->createProgressBar(count($items));
 
         foreach ($items as $item) {
-            $entry = CompendiumEntry::create([
-                'name' => (string) $item->name,
-                'entry_type' => 'item',
-                'is_system' => true,
+            $name = (string) $item->name;
+            $result = $this->createOrUpdateEntry($name, 'item', [
                 'text' => (string) $item->text,
                 'source' => $this->extractSource((string) $item->text),
-            ]);
+            ], function($entry) use ($item) {
+                return [
+                    'compendium_entry_id' => $entry->id,
+                    'type' => (string) $item->type,
+                    'weight' => !empty($item->weight) ? (float) $item->weight : null,
+                    'value' => !empty($item->value) ? (int) $item->value : null,
+                    'property' => (string) $item->property ?: null,
+                    'dmg1' => (string) $item->dmg1 ?: null,
+                    'dmg2' => (string) $item->dmg2 ?: null,
+                    'dmgType' => (string) $item->dmgType ?: null,
+                    'range' => (string) $item->range ?: null,
+                    'ac' => !empty($item->ac) ? (int) $item->ac : null,
+                    'magic' => isset($item->magic) && (string) $item->magic === 'YES',
+                    'detail' => (string) $item->detail ?: null,
+                    'modifiers' => $this->extractModifiers($item),
+                    'rolls' => $this->extractRolls($item),
+                ];
+            }, CompendiumItem::class);
 
-            CompendiumItem::create([
-                'compendium_entry_id' => $entry->id,
-                'type' => (string) $item->type,
-                'weight' => !empty($item->weight) ? (float) $item->weight : null,
-                'value' => !empty($item->value) ? (int) $item->value : null,
-                'property' => (string) $item->property ?: null,
-                'dmg1' => (string) $item->dmg1 ?: null,
-                'dmg2' => (string) $item->dmg2 ?: null,
-                'dmgType' => (string) $item->dmgType ?: null,
-                'range' => (string) $item->range ?: null,
-                'ac' => !empty($item->ac) ? (int) $item->ac : null,
-                'magic' => isset($item->magic) && (string) $item->magic === 'YES',
-                'detail' => (string) $item->detail ?: null,
-                'modifiers' => $this->extractModifiers($item),
-                'rolls' => $this->extractRolls($item),
-            ]);
-
+            $this->updateImportStats($result);
             $progressBar->advance();
         }
 
@@ -119,32 +271,31 @@ class ImportCompendiumCommand extends Command
     private function importSpells($xml)
     {
         $spells = $xml->xpath('//spell');
-        $this->info("Importing " . count($spells) . " spells...");
+        $this->info("Processing " . count($spells) . " spells...");
 
         $progressBar = $this->output->createProgressBar(count($spells));
 
         foreach ($spells as $spell) {
-            $entry = CompendiumEntry::create([
-                'name' => (string) $spell->name,
-                'entry_type' => 'spell',
-                'is_system' => true,
+            $name = (string) $spell->name;
+            $result = $this->createOrUpdateEntry($name, 'spell', [
                 'text' => (string) $spell->text,
                 'source' => $this->extractSource((string) $spell->text),
-            ]);
+            ], function($entry) use ($spell) {
+                return [
+                    'compendium_entry_id' => $entry->id,
+                    'level' => (int) $spell->level,
+                    'school' => (string) $spell->school,
+                    'ritual' => isset($spell->ritual) && (string) $spell->ritual === 'YES',
+                    'time' => (string) $spell->time ?: null,
+                    'range' => (string) $spell->range ?: null,
+                    'components' => (string) $spell->components ?: null,
+                    'duration' => (string) $spell->duration ?: null,
+                    'classes' => (string) $spell->classes ?: null,
+                    'rolls' => $this->extractRolls($spell),
+                ];
+            }, CompendiumSpell::class);
 
-            CompendiumSpell::create([
-                'compendium_entry_id' => $entry->id,
-                'level' => (int) $spell->level,
-                'school' => (string) $spell->school,
-                'ritual' => isset($spell->ritual) && (string) $spell->ritual === 'YES',
-                'time' => (string) $spell->time ?: null,
-                'range' => (string) $spell->range ?: null,
-                'components' => (string) $spell->components ?: null,
-                'duration' => (string) $spell->duration ?: null,
-                'classes' => (string) $spell->classes ?: null,
-                'rolls' => $this->extractRolls($spell),
-            ]);
-
+            $this->updateImportStats($result);
             $progressBar->advance();
         }
 
@@ -155,48 +306,47 @@ class ImportCompendiumCommand extends Command
     private function importMonsters($xml)
     {
         $monsters = $xml->xpath('//monster');
-        $this->info("Importing " . count($monsters) . " monsters...");
+        $this->info("Processing " . count($monsters) . " monsters...");
 
         $progressBar = $this->output->createProgressBar(count($monsters));
 
         foreach ($monsters as $monster) {
-            $entry = CompendiumEntry::create([
-                'name' => (string) $monster->name,
-                'entry_type' => 'monster',
-                'is_system' => true,
+            $name = (string) $monster->name;
+            $result = $this->createOrUpdateEntry($name, 'monster', [
                 'text' => (string) $monster->description,
                 'source' => $this->extractSource((string) $monster->description),
-            ]);
+            ], function($entry) use ($monster) {
+                return [
+                    'compendium_entry_id' => $entry->id,
+                    'type' => (string) $monster->type,
+                    'size' => (string) $monster->size,
+                    'alignment' => (string) $monster->alignment ?: null,
+                    'hp' => (string) $monster->hp ?: null,
+                    'speed' => (string) $monster->speed ?: null,
+                    'str' => !empty($monster->str) ? (int) $monster->str : null,
+                    'dex' => !empty($monster->dex) ? (int) $monster->dex : null,
+                    'con' => !empty($monster->con) ? (int) $monster->con : null,
+                    'int' => !empty($monster->int) ? (int) $monster->int : null,
+                    'wis' => !empty($monster->wis) ? (int) $monster->wis : null,
+                    'cha' => !empty($monster->cha) ? (int) $monster->cha : null,
+                    'save' => (string) $monster->save ?: null,
+                    'skill' => (string) $monster->skill ?: null,
+                    'resist' => (string) $monster->resist ?: null,
+                    'immune' => (string) $monster->immune ?: null,
+                    'vulnerable' => (string) $monster->vulnerable ?: null,
+                    'conditionImmune' => (string) $monster->conditionImmune ?: null,
+                    'senses' => (string) $monster->senses ?: null,
+                    'passive' => (string) $monster->passive ?: null,
+                    'languages' => (string) $monster->languages ?: null,
+                    'cr' => (string) $monster->cr ?: null,
+                    'environment' => (string) $monster->environment ?: null,
+                    'traits' => $this->extractTraits($monster),
+                    'actions' => $this->extractActions($monster),
+                    'attacks' => $this->extractAttacks($monster),
+                ];
+            }, CompendiumMonster::class);
 
-            CompendiumMonster::create([
-                'compendium_entry_id' => $entry->id,
-                'type' => (string) $monster->type,
-                'size' => (string) $monster->size,
-                'alignment' => (string) $monster->alignment ?: null,
-                'hp' => (string) $monster->hp ?: null,
-                'speed' => (string) $monster->speed ?: null,
-                'str' => !empty($monster->str) ? (int) $monster->str : null,
-                'dex' => !empty($monster->dex) ? (int) $monster->dex : null,
-                'con' => !empty($monster->con) ? (int) $monster->con : null,
-                'int' => !empty($monster->int) ? (int) $monster->int : null,
-                'wis' => !empty($monster->wis) ? (int) $monster->wis : null,
-                'cha' => !empty($monster->cha) ? (int) $monster->cha : null,
-                'save' => (string) $monster->save ?: null,
-                'skill' => (string) $monster->skill ?: null,
-                'resist' => (string) $monster->resist ?: null,
-                'immune' => (string) $monster->immune ?: null,
-                'vulnerable' => (string) $monster->vulnerable ?: null,
-                'conditionImmune' => (string) $monster->conditionImmune ?: null,
-                'senses' => (string) $monster->senses ?: null,
-                'passive' => (string) $monster->passive ?: null,
-                'languages' => (string) $monster->languages ?: null,
-                'cr' => (string) $monster->cr ?: null,
-                'environment' => (string) $monster->environment ?: null,
-                'traits' => $this->extractTraits($monster),
-                'actions' => $this->extractActions($monster),
-                'attacks' => $this->extractAttacks($monster),
-            ]);
-
+            $this->updateImportStats($result);
             $progressBar->advance();
         }
 
@@ -207,30 +357,29 @@ class ImportCompendiumCommand extends Command
     private function importRaces($xml)
     {
         $races = $xml->xpath('//race');
-        $this->info("Importing " . count($races) . " races...");
+        $this->info("Processing " . count($races) . " races...");
 
         $progressBar = $this->output->createProgressBar(count($races));
 
         foreach ($races as $race) {
-            $entry = CompendiumEntry::create([
-                'name' => (string) $race->name,
-                'entry_type' => 'race',
-                'is_system' => true,
+            $name = (string) $race->name;
+            $result = $this->createOrUpdateEntry($name, 'race', [
                 'text' => (string) $race->text,
                 'source' => $this->extractSource((string) $race->text),
-            ]);
+            ], function($entry) use ($race) {
+                return [
+                    'compendium_entry_id' => $entry->id,
+                    'size' => (string) $race->size ?: null,
+                    'speed' => (string) $race->speed ?: null,
+                    'ability' => (string) $race->ability ?: null,
+                    'proficiency' => (string) $race->proficiency ?: null,
+                    'spellAbility' => (string) $race->spellAbility ?: null,
+                    'traits' => $this->extractTraits($race),
+                    'modifiers' => $this->extractModifiers($race),
+                ];
+            }, CompendiumRace::class);
 
-            CompendiumRace::create([
-                'compendium_entry_id' => $entry->id,
-                'size' => (string) $race->size ?: null,
-                'speed' => (string) $race->speed ?: null,
-                'ability' => (string) $race->ability ?: null,
-                'proficiency' => (string) $race->proficiency ?: null,
-                'spellAbility' => (string) $race->spellAbility ?: null,
-                'traits' => $this->extractTraits($race),
-                'modifiers' => $this->extractModifiers($race),
-            ]);
-
+            $this->updateImportStats($result);
             $progressBar->advance();
         }
 
@@ -241,33 +390,32 @@ class ImportCompendiumCommand extends Command
     private function importClasses($xml)
     {
         $classes = $xml->xpath('//class');
-        $this->info("Importing " . count($classes) . " classes...");
+        $this->info("Processing " . count($classes) . " classes...");
 
         $progressBar = $this->output->createProgressBar(count($classes));
 
         foreach ($classes as $class) {
-            $entry = CompendiumEntry::create([
-                'name' => (string) $class->name,
-                'entry_type' => 'class',
-                'is_system' => true,
+            $name = (string) $class->name;
+            $result = $this->createOrUpdateEntry($name, 'class', [
                 'text' => (string) $class->text,
                 'source' => $this->extractSource((string) $class->text),
-            ]);
+            ], function($entry) use ($class) {
+                return [
+                    'compendium_entry_id' => $entry->id,
+                    'hd' => !empty($class->hd) ? (int) $class->hd : null,
+                    'proficiency' => (string) $class->proficiency ?: null,
+                    'numSkills' => !empty($class->numSkills) ? (int) $class->numSkills : null,
+                    'armor' => (string) $class->armor ?: null,
+                    'weapons' => (string) $class->weapons ?: null,
+                    'tools' => (string) $class->tools ?: null,
+                    'wealth' => (string) $class->wealth ?: null,
+                    'spellAbility' => (string) $class->spellAbility ?: null,
+                    'autolevels' => $this->extractAutolevels($class),
+                    'traits' => $this->extractTraits($class),
+                ];
+            }, CompendiumDndClass::class);
 
-            CompendiumDndClass::create([
-                'compendium_entry_id' => $entry->id,
-                'hd' => !empty($class->hd) ? (int) $class->hd : null,
-                'proficiency' => (string) $class->proficiency ?: null,
-                'numSkills' => !empty($class->numSkills) ? (int) $class->numSkills : null,
-                'armor' => (string) $class->armor ?: null,
-                'weapons' => (string) $class->weapons ?: null,
-                'tools' => (string) $class->tools ?: null,
-                'wealth' => (string) $class->wealth ?: null,
-                'spellAbility' => (string) $class->spellAbility ?: null,
-                'autolevels' => $this->extractAutolevels($class),
-                'traits' => $this->extractTraits($class),
-            ]);
-
+            $this->updateImportStats($result);
             $progressBar->advance();
         }
 
@@ -278,28 +426,27 @@ class ImportCompendiumCommand extends Command
     private function importBackgrounds($xml)
     {
         $backgrounds = $xml->xpath('//background');
-        $this->info("Importing " . count($backgrounds) . " backgrounds...");
+        $this->info("Processing " . count($backgrounds) . " backgrounds...");
 
         $progressBar = $this->output->createProgressBar(count($backgrounds));
 
         foreach ($backgrounds as $background) {
-            $entry = CompendiumEntry::create([
-                'name' => (string) $background->name,
-                'entry_type' => 'background',
-                'is_system' => true,
+            $name = (string) $background->name;
+            $result = $this->createOrUpdateEntry($name, 'background', [
                 'text' => (string) $background->text,
                 'source' => $this->extractSource((string) $background->text),
-            ]);
+            ], function($entry) use ($background) {
+                return [
+                    'compendium_entry_id' => $entry->id,
+                    'proficiency' => (string) $background->proficiency ?: null,
+                    'languages' => (string) $background->languages ?: null,
+                    'equipment' => (string) $background->equipment ?: null,
+                    'gold' => (string) $background->gold ?: null,
+                    'traits' => $this->extractTraits($background),
+                ];
+            }, CompendiumBackground::class);
 
-            CompendiumBackground::create([
-                'compendium_entry_id' => $entry->id,
-                'proficiency' => (string) $background->proficiency ?: null,
-                'languages' => (string) $background->languages ?: null,
-                'equipment' => (string) $background->equipment ?: null,
-                'gold' => (string) $background->gold ?: null,
-                'traits' => $this->extractTraits($background),
-            ]);
-
+            $this->updateImportStats($result);
             $progressBar->advance();
         }
 
@@ -310,26 +457,25 @@ class ImportCompendiumCommand extends Command
     private function importFeats($xml)
     {
         $feats = $xml->xpath('//feat');
-        $this->info("Importing " . count($feats) . " feats...");
+        $this->info("Processing " . count($feats) . " feats...");
 
         $progressBar = $this->output->createProgressBar(count($feats));
 
         foreach ($feats as $feat) {
-            $entry = CompendiumEntry::create([
-                'name' => (string) $feat->name,
-                'entry_type' => 'feat',
-                'is_system' => true,
+            $name = (string) $feat->name;
+            $result = $this->createOrUpdateEntry($name, 'feat', [
                 'text' => (string) $feat->text,
                 'source' => $this->extractSource((string) $feat->text),
-            ]);
+            ], function($entry) use ($feat) {
+                return [
+                    'compendium_entry_id' => $entry->id,
+                    'prerequisite' => (string) $feat->prerequisite ?: null,
+                    'modifiers' => $this->extractModifiers($feat),
+                    'traits' => $this->extractTraits($feat),
+                ];
+            }, CompendiumFeat::class);
 
-            CompendiumFeat::create([
-                'compendium_entry_id' => $entry->id,
-                'prerequisite' => (string) $feat->prerequisite ?: null,
-                'modifiers' => $this->extractModifiers($feat),
-                'traits' => $this->extractTraits($feat),
-            ]);
-
+            $this->updateImportStats($result);
             $progressBar->advance();
         }
 

@@ -11,6 +11,8 @@ use App\Models\CompendiumDndClass;
 use App\Models\CompendiumBackground;
 use App\Models\CompendiumFeat;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -24,298 +26,243 @@ class CompendiumController extends Controller
         $query = CompendiumEntry::query();
 
         // Filter by type
-        if ($request->has('type')) {
-            $query->where('type', $request->type);
-        }
-
-        // Filter by source (system/user)
-        if ($request->has('source')) {
-            $query->where('source', $request->source);
+        if ($request->filled('type') && $request->type !== 'all') {
+            $query->where('entry_type', $request->type);
         }
 
         // Search by name
-        if ($request->has('search')) {
+        if ($request->filled('search')) {
             $query->where('name', 'LIKE', '%' . $request->search . '%');
         }
 
-        // Include specific data
-        $query->with(['spell', 'item', 'monster', 'race', 'dndClass', 'background', 'feat']);
+        // Filter by source
+        if ($request->filled('source')) {
+            $query->where('source', $request->source);
+        }
 
-        $entries = $query->paginate($request->get('per_page', 20));
+        $entries = $query->orderBy('name')->paginate($request->get('per_page', 20));
+
+        // Get stats
+        $stats = [
+            'total' => CompendiumEntry::count(),
+            'system' => CompendiumEntry::where('is_system', true)->count(),
+            'user' => CompendiumEntry::where('is_system', false)->count(),
+            'types' => [
+                'spell' => CompendiumEntry::where('entry_type', 'spell')->count(),
+                'item' => CompendiumEntry::where('entry_type', 'item')->count(),
+                'monster' => CompendiumEntry::where('entry_type', 'monster')->count(),
+                'race' => CompendiumEntry::where('entry_type', 'race')->count(),
+                'class' => CompendiumEntry::where('entry_type', 'class')->count(),
+                'background' => CompendiumEntry::where('entry_type', 'background')->count(),
+                'feat' => CompendiumEntry::where('entry_type', 'feat')->count(),
+            ]
+        ];
 
         return Inertia::render('Compendium/Index', [
             'entries' => $entries,
-            'filters' => $request->only(['type', 'source', 'search']),
-            'stats' => [
-                'total_entries' => CompendiumEntry::count(),
-                'system_entries' => CompendiumEntry::where('source', 'system')->count(),
-                'user_entries' => CompendiumEntry::where('source', 'user')->count(),
-                'by_type' => [
-                    'spells' => CompendiumSpell::count(),
-                    'items' => CompendiumItem::count(),
-                    'monsters' => CompendiumMonster::count(),
-                    'races' => CompendiumRace::count(),
-                    'classes' => CompendiumDndClass::count(),
-                    'backgrounds' => CompendiumBackground::count(),
-                    'feats' => CompendiumFeat::count(),
-                ]
-            ]
+            'filter' => $request->only(['type', 'source', 'search']),
+            'stats' => $stats,
         ]);
     }
 
     /**
-     * Display a specific compendium entry
+     * Show the form for creating a new compendium entry
+     */
+    public function create(): Response
+    {
+        return Inertia::render('Compendium/Form', [
+            'isEdit' => false,
+        ]);
+    }
+
+    /**
+     * Store a newly created compendium entry
+     */
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'entry_type' => 'required|in:spell,item,monster,race,class,background,feat',
+            'text' => 'required|string',
+            'source' => 'nullable|string|max:255',
+            'specific_data' => 'nullable|array',
+        ]);
+
+        DB::transaction(function () use ($validated, $request) {
+            // Create the main entry
+            $entry = CompendiumEntry::create([
+                'name' => $validated['name'],
+                'entry_type' => $validated['entry_type'],
+                'text' => $validated['text'],
+                'source' => $validated['source'] ?? 'Custom',
+                'is_system' => false, // User entries are never system entries
+                'user_id' => $request->user()->id,
+            ]);
+
+            // Create the specific data entry
+            $this->createSpecificData($entry, $validated['entry_type'], $validated['specific_data'] ?? []);
+        });
+
+        return redirect()->route('compendium.index')->with('success', 'Compendium entry created successfully!');
+    }
+
+    /**
+     * Display the specified compendium entry
      */
     public function show(CompendiumEntry $entry): Response
     {
-        $entry->load(['spell', 'item', 'monster', 'race', 'dndClass', 'background', 'feat']);
+        // Load the specific data based on entry type
+        $entry->load($this->getRelationshipName($entry->entry_type));
 
         return Inertia::render('Compendium/Show', [
             'entry' => $entry,
-            'specific_data' => $entry->specific_data
         ]);
     }
 
     /**
-     * Display spells page
+     * Show the form for editing the specified compendium entry
      */
-    public function spells(Request $request): Response
+    public function edit(CompendiumEntry $entry): Response
     {
-        $query = CompendiumSpell::with('compendiumEntry');
-
-        // Filter by level
-        if ($request->has('level')) {
-            $query->where('level', $request->level);
+        // Only allow editing of user entries
+        if ($entry->is_system) {
+            abort(403, 'System entries cannot be edited.');
         }
 
-        // Filter by school
-        if ($request->has('school')) {
-            $query->where('school', 'LIKE', '%' . $request->school . '%');
-        }
+        // Load the specific data
+        $entry->load($this->getRelationshipName($entry->entry_type));
 
-        // Filter by class
-        if ($request->has('classes')) {
-            $query->where('classes', 'LIKE', '%' . $request->classes . '%');
-        }
-
-        // Search by name
-        if ($request->has('search')) {
-            $query->whereHas('compendiumEntry', function ($q) use ($request) {
-                $q->where('name', 'LIKE', '%' . $request->search . '%');
-            });
-        }
-
-        // Filter by source (system/user)
-        if ($request->has('source')) {
-            $query->whereHas('compendiumEntry', function ($q) use ($request) {
-                $q->where('source', $request->source);
-            });
-        }
-
-        $spells = $query->paginate($request->get('per_page', 20));
-
-        return Inertia::render('Compendium/Spells', [
-            'spells' => $spells,
-            'filters' => $request->only(['level', 'school', 'classes', 'search', 'source'])
+        return Inertia::render('Compendium/Form', [
+            'entry' => $entry,
+            'isEdit' => true,
         ]);
     }
 
     /**
-     * Display items page
+     * Update the specified compendium entry
      */
-    public function items(Request $request): Response
+    public function update(Request $request, CompendiumEntry $entry)
     {
-        $query = CompendiumItem::with('compendiumEntry');
-
-        // Filter by type
-        if ($request->has('type')) {
-            $query->where('type', 'LIKE', '%' . $request->type . '%');
+        // Only allow updating of user entries
+        if ($entry->is_system) {
+            abort(403, 'System entries cannot be modified.');
         }
 
-        // Filter by rarity
-        if ($request->has('rarity')) {
-            $query->where('rarity', 'LIKE', '%' . $request->rarity . '%');
-        }
-
-        // Search by name
-        if ($request->has('search')) {
-            $query->whereHas('compendiumEntry', function ($q) use ($request) {
-                $q->where('name', 'LIKE', '%' . $request->search . '%');
-            });
-        }
-
-        // Filter by source (system/user)
-        if ($request->has('source')) {
-            $query->whereHas('compendiumEntry', function ($q) use ($request) {
-                $q->where('source', $request->source);
-            });
-        }
-
-        $items = $query->paginate($request->get('per_page', 20));
-
-        return Inertia::render('Compendium/Items', [
-            'items' => $items,
-            'filters' => $request->only(['type', 'rarity', 'search', 'source'])
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'entry_type' => ['required', Rule::in(['spell', 'item', 'monster', 'race', 'class', 'background', 'feat'])],
+            'text' => 'required|string',
+            'source' => 'nullable|string|max:255',
+            'specific_data' => 'nullable|array',
         ]);
+
+        DB::transaction(function () use ($validated, $entry) {
+            // Update the main entry
+            $entry->update([
+                'name' => $validated['name'],
+                'entry_type' => $validated['entry_type'],
+                'text' => $validated['text'],
+                'source' => $validated['source'] ?? 'Custom',
+            ]);
+
+            // Update the specific data
+            $this->updateSpecificData($entry, $validated['entry_type'], $validated['specific_data'] ?? []);
+        });
+
+        return redirect()->route('compendium.show', $entry)->with('success', 'Compendium entry updated successfully!');
     }
 
     /**
-     * Display monsters page
+     * Remove the specified compendium entry
      */
-    public function monsters(Request $request): Response
+    public function destroy(CompendiumEntry $entry)
     {
-        $query = CompendiumMonster::with('compendiumEntry');
-
-        // Filter by CR
-        if ($request->has('cr')) {
-            $query->where('cr', $request->cr);
+        // Only allow deleting of user entries
+        if ($entry->is_system) {
+            abort(403, 'System entries cannot be deleted.');
         }
 
-        // Filter by type
-        if ($request->has('type')) {
-            $query->where('type', 'LIKE', '%' . $request->type . '%');
-        }
+        $entry->delete();
 
-        // Filter by size
-        if ($request->has('size')) {
-            $query->where('size', 'LIKE', '%' . $request->size . '%');
-        }
-
-        // Search by name
-        if ($request->has('search')) {
-            $query->whereHas('compendiumEntry', function ($q) use ($request) {
-                $q->where('name', 'LIKE', '%' . $request->search . '%');
-            });
-        }
-
-        // Filter by source (system/user)
-        if ($request->has('source')) {
-            $query->whereHas('compendiumEntry', function ($q) use ($request) {
-                $q->where('source', $request->source);
-            });
-        }
-
-        $monsters = $query->paginate($request->get('per_page', 20));
-
-        return Inertia::render('Compendium/Monsters', [
-            'monsters' => $monsters,
-            'filters' => $request->only(['cr', 'type', 'size', 'search', 'source'])
-        ]);
+        return redirect()->route('compendium.index')->with('success', 'Compendium entry deleted successfully!');
     }
 
     /**
-     * Display races page
+     * Get entries by type for character creation/editing
      */
-    public function races(Request $request): Response
+    public function getByType(Request $request, string $type)
     {
-        $query = CompendiumRace::with('compendiumEntry');
+        $query = CompendiumEntry::where('entry_type', $type);
 
-        // Search by name
-        if ($request->has('search')) {
-            $query->whereHas('compendiumEntry', function ($q) use ($request) {
-                $q->where('name', 'LIKE', '%' . $request->search . '%');
-            });
+        if ($request->filled('search')) {
+            $query->where('name', 'LIKE', '%' . $request->search . '%');
         }
 
-        // Filter by source (system/user)
-        if ($request->has('source')) {
-            $query->whereHas('compendiumEntry', function ($q) use ($request) {
-                $q->where('source', $request->source);
-            });
-        }
+        $entries = $query->orderBy('name')->get(['id', 'name', 'source', 'is_system']);
 
-        $races = $query->paginate($request->get('per_page', 20));
-
-        return Inertia::render('Compendium/Races', [
-            'races' => $races,
-            'filters' => $request->only(['search', 'source'])
-        ]);
+        return response()->json($entries);
     }
 
     /**
-     * Display classes page
+     * Create specific data entry based on type
      */
-    public function classes(Request $request): Response
+    private function createSpecificData(CompendiumEntry $entry, string $type, array $data): void
     {
-        $query = CompendiumDndClass::with('compendiumEntry');
+        $specificData = array_merge(['compendium_entry_id' => $entry->id], $data);
 
-        // Search by name
-        if ($request->has('search')) {
-            $query->whereHas('compendiumEntry', function ($q) use ($request) {
-                $q->where('name', 'LIKE', '%' . $request->search . '%');
-            });
+        switch ($type) {
+            case 'spell':
+                CompendiumSpell::create($specificData);
+                break;
+            case 'item':
+                CompendiumItem::create($specificData);
+                break;
+            case 'monster':
+                CompendiumMonster::create($specificData);
+                break;
+            case 'race':
+                CompendiumRace::create($specificData);
+                break;
+            case 'class':
+                CompendiumDndClass::create($specificData);
+                break;
+            case 'background':
+                CompendiumBackground::create($specificData);
+                break;
+            case 'feat':
+                CompendiumFeat::create($specificData);
+                break;
         }
-
-        // Filter by source (system/user)
-        if ($request->has('source')) {
-            $query->whereHas('compendiumEntry', function ($q) use ($request) {
-                $q->where('source', $request->source);
-            });
-        }
-
-        $classes = $query->paginate($request->get('per_page', 20));
-
-        return Inertia::render('Compendium/Classes', [
-            'classes' => $classes,
-            'filters' => $request->only(['search', 'source'])
-        ]);
     }
 
     /**
-     * Display backgrounds page
+     * Update specific data entry based on type
      */
-    public function backgrounds(Request $request): Response
+    private function updateSpecificData(CompendiumEntry $entry, string $type, array $data): void
     {
-        $query = CompendiumBackground::with('compendiumEntry');
+        $relationshipName = $this->getRelationshipName($type);
 
-        // Search by name
-        if ($request->has('search')) {
-            $query->whereHas('compendiumEntry', function ($q) use ($request) {
-                $q->where('name', 'LIKE', '%' . $request->search . '%');
-            });
+        if ($entry->{$relationshipName}) {
+            $entry->{$relationshipName}->update($data);
+        } else {
+            $this->createSpecificData($entry, $type, $data);
         }
-
-        // Filter by source (system/user)
-        if ($request->has('source')) {
-            $query->whereHas('compendiumEntry', function ($q) use ($request) {
-                $q->where('source', $request->source);
-            });
-        }
-
-        $backgrounds = $query->paginate($request->get('per_page', 20));
-
-        return Inertia::render('Compendium/Backgrounds', [
-            'backgrounds' => $backgrounds,
-            'filters' => $request->only(['search', 'source'])
-        ]);
     }
 
     /**
-     * Display feats page
+     * Get the relationship name for a given entry type
      */
-    public function feats(Request $request): Response
+    private function getRelationshipName(string $entryType): string
     {
-        $query = CompendiumFeat::with('compendiumEntry');
-
-        // Search by name
-        if ($request->has('search')) {
-            $query->whereHas('compendiumEntry', function ($q) use ($request) {
-                $q->where('name', 'LIKE', '%' . $request->search . '%');
-            });
-        }
-
-        // Filter by source (system/user)
-        if ($request->has('source')) {
-            $query->whereHas('compendiumEntry', function ($q) use ($request) {
-                $q->where('source', $request->source);
-            });
-        }
-
-        $feats = $query->paginate($request->get('per_page', 20));
-
-        return Inertia::render('Compendium/Feats', [
-            'feats' => $feats,
-            'filters' => $request->only(['search', 'source'])
-        ]);
+        return match($entryType) {
+            'spell' => 'spell',
+            'item' => 'item',
+            'monster' => 'monster',
+            'race' => 'race',
+            'class' => 'dndClass',
+            'background' => 'background',
+            'feat' => 'feat',
+            default => $entryType,
+        };
     }
 }

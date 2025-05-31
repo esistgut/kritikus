@@ -3,16 +3,18 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import AppLayout from '@/Layouts/AppLayout';
-import { Character, PageProps } from '@/types';
+import { Character, PageProps, CompendiumData } from '@/types';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { ArrowLeft, Save } from 'lucide-react';
 import React, { useState } from 'react';
 
 interface CharacterEditProps extends PageProps {
   character: Character;
+  compendiumData: CompendiumData;
 }
 
 const SKILLS = [
@@ -26,7 +28,7 @@ const LANGUAGES = [
   'Abyssal', 'Celestial', 'Draconic', 'Deep Speech', 'Infernal', 'Primordial', 'Sylvan', 'Undercommon'
 ];
 
-export default function Edit({ character }: CharacterEditProps) {
+export default function Edit({ character, compendiumData }: CharacterEditProps) {
   // Get the tab parameter from URL
   const urlParams = new URLSearchParams(window.location.search);
   const initialTab = urlParams.get('tab') || 'basic';
@@ -36,9 +38,12 @@ export default function Edit({ character }: CharacterEditProps) {
 
   const { data, setData, put, processing, errors } = useForm({
     name: character.name,
-    class: character.class,
-    race: character.race,
-    background: character.background,
+    race_id: character.race_id,
+    class_id: character.class_id,
+    background_id: character.background_id,
+    selected_spell_ids: character.selected_spell_ids || [],
+    selected_feat_ids: character.selected_feat_ids || [],
+    selected_item_ids: character.selected_item_ids || [],
     level: character.level,
     experience: character.experience,
     strength: character.strength,
@@ -286,36 +291,66 @@ export default function Edit({ character }: CharacterEditProps) {
                       </div>
                       <div>
                         <Label htmlFor="class">Class *</Label>
-                        <Input
-                          id="class"
-                          value={data.class}
-                          onChange={e => setData('class', e.target.value)}
+                        <Select
+                          value={data.class_id.toString()}
+                          onValueChange={(value) => setData('class_id', parseInt(value))}
                           required
-                        />
-                        {errors.class && <p className="text-sm text-destructive mt-1">{errors.class}</p>}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a class" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {compendiumData.classes.map((cls) => (
+                              <SelectItem key={cls.id} value={cls.compendium_entry_id.toString()}>
+                                {cls.compendium_entry?.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {errors.class_id && <p className="text-sm text-destructive mt-1">{errors.class_id}</p>}
                       </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <Label htmlFor="race">Race *</Label>
-                        <Input
-                          id="race"
-                          value={data.race}
-                          onChange={e => setData('race', e.target.value)}
+                        <Select
+                          value={data.race_id.toString()}
+                          onValueChange={(value) => setData('race_id', parseInt(value))}
                           required
-                        />
-                        {errors.race && <p className="text-sm text-destructive mt-1">{errors.race}</p>}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a race" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {compendiumData.races.map((race) => (
+                              <SelectItem key={race.id} value={race.compendium_entry_id.toString()}>
+                                {race.compendium_entry?.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {errors.race_id && <p className="text-sm text-destructive mt-1">{errors.race_id}</p>}
                       </div>
                       <div>
                         <Label htmlFor="background">Background *</Label>
-                        <Input
-                          id="background"
-                          value={data.background}
-                          onChange={e => setData('background', e.target.value)}
+                        <Select
+                          value={data.background_id.toString()}
+                          onValueChange={(value) => setData('background_id', parseInt(value))}
                           required
-                        />
-                        {errors.background && <p className="text-sm text-destructive mt-1">{errors.background}</p>}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a background" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {compendiumData.backgrounds.map((background) => (
+                              <SelectItem key={background.id} value={background.compendium_entry_id.toString()}>
+                                {background.compendium_entry?.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {errors.background_id && <p className="text-sm text-destructive mt-1">{errors.background_id}</p>}
                       </div>
                     </div>
 

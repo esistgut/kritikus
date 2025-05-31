@@ -13,9 +13,15 @@ export interface Sound {
 export interface Character {
     id: number;
     name: string;
-    class: string;
-    race: string;
-    background: string;
+
+    // Compendium references
+    race_id: number;
+    class_id: number;
+    background_id: number;
+    selected_spell_ids?: number[];
+    selected_feat_ids?: number[];
+    selected_item_ids?: number[];
+
     level: number;
     experience: number;
 
@@ -137,4 +143,86 @@ export interface PageProps {
         message?: string;
     };
     [key: string]: any;
+}
+
+export interface CompendiumEntry {
+    id: number;
+    name: string;
+    entry_type: 'spell' | 'item' | 'monster' | 'race' | 'class' | 'background' | 'feat';
+    is_system: boolean;
+    user_id?: number;
+    text: string;
+    source: string;
+    created_at: string;
+    updated_at: string;
+    specific_data?: any;
+}
+
+export interface CompendiumSpell {
+    id: number;
+    compendium_entry_id: number;
+    level: number;
+    school: string;
+    casting_time?: string;
+    range?: string;
+    components?: string;
+    duration?: string;
+    ritual?: boolean;
+    concentration?: boolean;
+    classes?: string;
+    compendium_entry?: CompendiumEntry;
+}
+
+export interface CompendiumRace {
+    id: number;
+    compendium_entry_id: number;
+    size?: string;
+    speed?: string;
+    ability?: string;
+    proficiency?: string;
+    spellAbility?: string;
+    compendium_entry?: CompendiumEntry;
+}
+
+export interface CompendiumDndClass {
+    id: number;
+    compendium_entry_id: number;
+    hd?: number;
+    proficiency?: string;
+    spellAbility?: string;
+    compendium_entry?: CompendiumEntry;
+}
+
+export interface CompendiumBackground {
+    id: number;
+    compendium_entry_id: number;
+    proficiency?: string;
+    compendium_entry?: CompendiumEntry;
+}
+
+export interface CompendiumFeat {
+    id: number;
+    compendium_entry_id: number;
+    prerequisite?: string;
+    compendium_entry?: CompendiumEntry;
+}
+
+export interface CompendiumItem {
+    id: number;
+    compendium_entry_id: number;
+    type?: string;
+    weight?: number;
+    value?: number;
+    ac?: number;
+    magic?: boolean;
+    compendium_entry?: CompendiumEntry;
+}
+
+export interface CompendiumData {
+    races: CompendiumRace[];
+    classes: CompendiumDndClass[];
+    backgrounds: CompendiumBackground[];
+    spells: CompendiumSpell[];
+    feats: CompendiumFeat[];
+    items: CompendiumItem[];
 }

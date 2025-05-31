@@ -6,15 +6,23 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AppLayout from '@/Layouts/AppLayout';
 import { ArrowLeft, Save } from 'lucide-react';
 import { Link } from '@inertiajs/react';
+import { CompendiumData } from '@/types';
 
 interface CharacterFormData {
   name: string;
-  class: string;
-  race: string;
-  background: string;
+
+  // Compendium references
+  race_id: number;
+  class_id: number;
+  background_id: number;
+  selected_spell_ids?: number[];
+  selected_feat_ids?: number[];
+  selected_item_ids?: number[];
+
   level: number;
   experience: number;
   strength: number;
@@ -69,12 +77,15 @@ const LANGUAGES = [
   'Abyssal', 'Celestial', 'Draconic', 'Deep Speech', 'Infernal', 'Primordial', 'Sylvan', 'Undercommon'
 ];
 
-export default function Create() {
+export default function Create({ compendiumData }: { compendiumData: CompendiumData }) {
   const { data, setData, post, processing, errors } = useForm<CharacterFormData>({
     name: '',
-    class: '',
-    race: '',
-    background: '',
+    race_id: 0,
+    class_id: 0,
+    background_id: 0,
+    selected_spell_ids: [],
+    selected_feat_ids: [],
+    selected_item_ids: [],
     level: 1,
     experience: 0,
     strength: 10,
@@ -192,36 +203,54 @@ export default function Create() {
                       </div>
                       <div>
                         <Label htmlFor="class">Class *</Label>
-                        <Input
-                          id="class"
-                          value={data.class}
-                          onChange={e => setData('class', e.target.value)}
-                          required
-                        />
-                        {errors.class && <p className="text-sm text-destructive mt-1">{errors.class}</p>}
+                        <Select onValueChange={(value) => setData('class_id', parseInt(value))} required>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a class" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {compendiumData.classes.map((cls) => (
+                              <SelectItem key={cls.id} value={cls.compendium_entry_id.toString()}>
+                                {cls.compendium_entry?.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {errors.class_id && <p className="text-sm text-destructive mt-1">{errors.class_id}</p>}
                       </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <Label htmlFor="race">Race *</Label>
-                        <Input
-                          id="race"
-                          value={data.race}
-                          onChange={e => setData('race', e.target.value)}
-                          required
-                        />
-                        {errors.race && <p className="text-sm text-destructive mt-1">{errors.race}</p>}
+                        <Select onValueChange={(value) => setData('race_id', parseInt(value))} required>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a race" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {compendiumData.races.map((race) => (
+                              <SelectItem key={race.id} value={race.compendium_entry_id.toString()}>
+                                {race.compendium_entry?.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {errors.race_id && <p className="text-sm text-destructive mt-1">{errors.race_id}</p>}
                       </div>
                       <div>
                         <Label htmlFor="background">Background *</Label>
-                        <Input
-                          id="background"
-                          value={data.background}
-                          onChange={e => setData('background', e.target.value)}
-                          required
-                        />
-                        {errors.background && <p className="text-sm text-destructive mt-1">{errors.background}</p>}
+                        <Select onValueChange={(value) => setData('background_id', parseInt(value))} required>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a background" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {compendiumData.backgrounds.map((background) => (
+                              <SelectItem key={background.id} value={background.compendium_entry_id.toString()}>
+                                {background.compendium_entry?.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {errors.background_id && <p className="text-sm text-destructive mt-1">{errors.background_id}</p>}
                       </div>
                     </div>
 

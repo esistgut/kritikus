@@ -32,15 +32,8 @@ Route::middleware('auth')->group(function () {
     Route::resource('characters', CharacterController::class);
 
     // Compendium routes
-    Route::prefix('compendium')->name('compendium.')->group(function () {
-        Route::get('/', [CompendiumController::class, 'index'])->name('index');
-        Route::get('/spells', [CompendiumController::class, 'spells'])->name('spells');
-        Route::get('/items', [CompendiumController::class, 'items'])->name('items');
-        Route::get('/monsters', [CompendiumController::class, 'monsters'])->name('monsters');
-        Route::get('/races', [CompendiumController::class, 'races'])->name('races');
-        Route::get('/classes', [CompendiumController::class, 'classes'])->name('classes');
-        Route::get('/backgrounds', [CompendiumController::class, 'backgrounds'])->name('backgrounds');
-        Route::get('/feats', [CompendiumController::class, 'feats'])->name('feats');
-        Route::get('/{entry}', [CompendiumController::class, 'show'])->name('show');
-    });
+    Route::resource('compendium', CompendiumController::class);
+
+    // Additional compendium API routes for character creation
+    Route::get('/api/compendium/{type}', [CompendiumController::class, 'getByType'])->name('compendium.by-type');
 });

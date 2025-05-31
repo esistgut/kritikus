@@ -8,7 +8,8 @@ import {
   Menu,
   X,
   Home,
-  LogOut
+  LogOut,
+  Book
 } from 'lucide-react';
 import { useState } from 'react';
 import { PageProps } from '@/types';
@@ -51,6 +52,12 @@ export default function AppLayout({ children }: AppLayoutProps) {
       href: '/characters',
       icon: User,
       current: url.startsWith('/characters'),
+    },
+    {
+      name: 'Compendium',
+      href: '/compendium',
+      icon: Book,
+      current: url.startsWith('/compendium'),
     },
   ];
 

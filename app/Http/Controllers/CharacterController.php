@@ -3,6 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\Character;
+use App\Models\CompendiumEntry;
+use App\Models\CompendiumRace;
+use App\Models\CompendiumDndClass;
+use App\Models\CompendiumBackground;
+use App\Models\CompendiumSpell;
+use App\Models\CompendiumFeat;
+use App\Models\CompendiumItem;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Validation\Rule;
@@ -33,7 +40,34 @@ class CharacterController extends Controller
      */
     public function create()
     {
-        return Inertia::render('Characters/Create');
+        return Inertia::render('Characters/Create', [
+            'compendiumData' => [
+                'races' => CompendiumRace::with('compendiumEntry')
+                    ->whereHas('compendiumEntry', function($q) {
+                        $q->orderBy('name');
+                    })->get(),
+                'classes' => CompendiumDndClass::with('compendiumEntry')
+                    ->whereHas('compendiumEntry', function($q) {
+                        $q->orderBy('name');
+                    })->get(),
+                'backgrounds' => CompendiumBackground::with('compendiumEntry')
+                    ->whereHas('compendiumEntry', function($q) {
+                        $q->orderBy('name');
+                    })->get(),
+                'spells' => CompendiumSpell::with('compendiumEntry')
+                    ->whereHas('compendiumEntry', function($q) {
+                        $q->orderBy('name');
+                    })->get(),
+                'feats' => CompendiumFeat::with('compendiumEntry')
+                    ->whereHas('compendiumEntry', function($q) {
+                        $q->orderBy('name');
+                    })->get(),
+                'items' => CompendiumItem::with('compendiumEntry')
+                    ->whereHas('compendiumEntry', function($q) {
+                        $q->orderBy('name');
+                    })->get(),
+            ]
+        ]);
     }
 
     /**
@@ -43,9 +77,9 @@ class CharacterController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'class' => 'required|string|max:255',
-            'race' => 'required|string|max:255',
-            'background' => 'required|string|max:255',
+            'race_id' => 'required|exists:compendium_entries,id',
+            'class_id' => 'required|exists:compendium_entries,id',
+            'background_id' => 'required|exists:compendium_entries,id',
             'level' => 'integer|min:1|max:20',
             'experience' => 'integer|min:0',
             'strength' => 'integer|min:1|max:30',
@@ -87,6 +121,12 @@ class CharacterController extends Controller
             'spell_save_dc' => 'integer',
             'spell_slots' => 'array',
             'spells_known' => 'array',
+            'selected_spell_ids' => 'array',
+            'selected_spell_ids.*' => 'exists:compendium_entries,id',
+            'selected_feat_ids' => 'array',
+            'selected_feat_ids.*' => 'exists:compendium_entries,id',
+            'selected_item_ids' => 'array',
+            'selected_item_ids.*' => 'exists:compendium_entries,id',
         ]);
 
         auth()->user()->characters()->create($validated);
@@ -116,6 +156,32 @@ class CharacterController extends Controller
 
         return Inertia::render('Characters/Edit', [
             'character' => $character,
+            'compendiumData' => [
+                'races' => CompendiumRace::with('compendiumEntry')
+                    ->whereHas('compendiumEntry', function($q) {
+                        $q->orderBy('name');
+                    })->get(),
+                'classes' => CompendiumDndClass::with('compendiumEntry')
+                    ->whereHas('compendiumEntry', function($q) {
+                        $q->orderBy('name');
+                    })->get(),
+                'backgrounds' => CompendiumBackground::with('compendiumEntry')
+                    ->whereHas('compendiumEntry', function($q) {
+                        $q->orderBy('name');
+                    })->get(),
+                'spells' => CompendiumSpell::with('compendiumEntry')
+                    ->whereHas('compendiumEntry', function($q) {
+                        $q->orderBy('name');
+                    })->get(),
+                'feats' => CompendiumFeat::with('compendiumEntry')
+                    ->whereHas('compendiumEntry', function($q) {
+                        $q->orderBy('name');
+                    })->get(),
+                'items' => CompendiumItem::with('compendiumEntry')
+                    ->whereHas('compendiumEntry', function($q) {
+                        $q->orderBy('name');
+                    })->get(),
+            ]
         ]);
     }
 
@@ -126,9 +192,9 @@ class CharacterController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'class' => 'required|string|max:255',
-            'race' => 'required|string|max:255',
-            'background' => 'required|string|max:255',
+            'race_id' => 'required|exists:compendium_entries,id',
+            'class_id' => 'required|exists:compendium_entries,id',
+            'background_id' => 'required|exists:compendium_entries,id',
             'level' => 'integer|min:1|max:20',
             'experience' => 'integer|min:0',
             'strength' => 'integer|min:1|max:30',
@@ -170,6 +236,12 @@ class CharacterController extends Controller
             'spell_save_dc' => 'integer',
             'spell_slots' => 'array',
             'spells_known' => 'array',
+            'selected_spell_ids' => 'array',
+            'selected_spell_ids.*' => 'exists:compendium_entries,id',
+            'selected_feat_ids' => 'array',
+            'selected_feat_ids.*' => 'exists:compendium_entries,id',
+            'selected_item_ids' => 'array',
+            'selected_item_ids.*' => 'exists:compendium_entries,id',
             'tab' => 'nullable|string|in:overview,abilities,combat,spells,skills,character',
         ]);
 

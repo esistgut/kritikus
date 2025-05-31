@@ -9,9 +9,9 @@ class Character extends Model
 {
     protected $fillable = [
         'name',
-        'class',
-        'race',
-        'background',
+        'race_id',
+        'class_id',
+        'background_id',
         'level',
         'experience',
         'strength',
@@ -53,6 +53,9 @@ class Character extends Model
         'spell_save_dc',
         'spell_slots',
         'spells_known',
+        'selected_spell_ids',
+        'selected_feat_ids',
+        'selected_item_ids',
     ];
 
     protected $casts = [
@@ -67,6 +70,9 @@ class Character extends Model
         'equipment' => 'array',
         'spell_slots' => 'array',
         'spells_known' => 'array',
+        'selected_spell_ids' => 'array',
+        'selected_feat_ids' => 'array',
+        'selected_item_ids' => 'array',
         'strength_save_proficiency' => 'boolean',
         'dexterity_save_proficiency' => 'boolean',
         'constitution_save_proficiency' => 'boolean',
@@ -99,5 +105,39 @@ class Character extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    // Compendium relationships
+    public function race()
+    {
+        return $this->belongsTo(CompendiumEntry::class, 'race_id');
+    }
+
+    public function characterClass()
+    {
+        return $this->belongsTo(CompendiumEntry::class, 'class_id');
+    }
+
+    public function background()
+    {
+        return $this->belongsTo(CompendiumEntry::class, 'background_id');
+    }
+
+    // Get selected spells
+    public function selectedSpells()
+    {
+        return CompendiumEntry::whereIn('id', $this->selected_spell_ids ?? [])->get();
+    }
+
+    // Get selected feats
+    public function selectedFeats()
+    {
+        return CompendiumEntry::whereIn('id', $this->selected_feat_ids ?? [])->get();
+    }
+
+    // Get selected items
+    public function selectedItems()
+    {
+        return CompendiumEntry::whereIn('id', $this->selected_item_ids ?? [])->get();
     }
 }
