@@ -212,7 +212,7 @@ export default function CharacterForm({ character, compendiumData, mode }: Chara
       <Head title={mode === 'create' ? 'Create Character' : `Edit ${character?.name}`} />
 
       <div className="p-6">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-6xl mx-auto">
           <div className="flex items-center gap-4 mb-8">
             <Link href={mode === 'create' ? '/characters' : `/characters/${character?.id}?tab=${getShowTab(activeTab)}`}>
               <Button variant="outline" size="sm">
