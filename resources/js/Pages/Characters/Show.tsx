@@ -89,6 +89,8 @@ export default function Show({ character }: CharacterShowProps) {
     'Survival': character.wisdom,
   };
 
+  console.log(character);
+
   return (
     <AppLayout>
       <Head title={`${character.name} - Character Sheet`} />
@@ -107,10 +109,10 @@ export default function Show({ character }: CharacterShowProps) {
               <div>
                 <h1 className="text-3xl font-bold">{character.name}</h1>
                 <div className="flex flex-wrap gap-2 mt-2">
-                  <Badge variant="secondary">{character.race}</Badge>
-                  <Badge variant="outline">{character.class}</Badge>
+                  <Badge variant="secondary">{character.race?.name || 'Unknown Race'}</Badge>
+                  <Badge variant="outline">{character.character_class?.name || 'Unknown Class'}</Badge>
                   <Badge variant="default">Level {character.level}</Badge>
-                  <Badge variant="outline">{character.background}</Badge>
+                  <Badge variant="outline">{character.background?.name || 'Unknown Background'}</Badge>
                 </div>
               </div>
             </div>
@@ -506,47 +508,58 @@ export default function Show({ character }: CharacterShowProps) {
                   )}
 
                   {/* Known Spells */}
-                  {character.spells_known.length > 0 && (
+                  {character.selectedSpells && character.selectedSpells.length > 0 && (
                     <Card>
                       <CardHeader>
-                        <CardTitle>Known Spells ({character.spells_known.length})</CardTitle>
+                        <CardTitle>Known Spells ({character.selectedSpells.length})</CardTitle>
                       </CardHeader>
                       <CardContent>
                         <div className="space-y-4">
-                          {Array.from(new Set(character.spells_known.map(spell => spell.level))).sort((a, b) => a - b).map(level => (
+                          {Array.from(new Set(character.selectedSpells.map(entry => entry.spell?.level || 0))).sort((a, b) => a - b).map(level => (
                             <div key={level}>
                               <h4 className="font-semibold mb-3">
                                 {level === 0 ? 'Cantrips' : `Level ${level} Spells`}
                               </h4>
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {character.spells_known
-                                  .filter(spell => spell.level === level)
-                                  .map((spell, index) => (
-                                    <Card key={index} className="p-4">
-                                      <div className="flex justify-between items-start mb-2">
-                                        <h5 className="font-semibold">{spell.name}</h5>
-                                        <div className="flex gap-1">
-                                          <Badge variant="secondary" className="text-xs">
-                                            {spell.school}
-                                          </Badge>
-                                          {spell.prepared && (
-                                            <Badge variant="default" className="text-xs">
-                                              Prepared
+                                {character.selectedSpells!
+                                  .filter(entry => entry.spell?.level === level)
+                                  .map((entry, index) => {
+                                    const spellData = entry.spell;
+                                    return (
+                                      <Card key={index} className="p-4">
+                                        <div className="flex justify-between items-start mb-2">
+                                          <h5 className="font-semibold">{entry.name}</h5>
+                                          <div className="flex gap-1">
+                                            <Badge variant="secondary" className="text-xs">
+                                              {spellData?.school === 'EV' ? 'Evocation' :
+                                               spellData?.school === 'AB' ? 'Abjuration' :
+                                               spellData?.school === 'CO' ? 'Conjuration' :
+                                               spellData?.school === 'DI' ? 'Divination' :
+                                               spellData?.school === 'EN' ? 'Enchantment' :
+                                               spellData?.school === 'IL' ? 'Illusion' :
+                                               spellData?.school === 'NE' ? 'Necromancy' :
+                                               spellData?.school === 'TR' ? 'Transmutation' :
+                                               spellData?.school || 'Unknown'}
                                             </Badge>
-                                          )}
+                                            {spellData?.ritual && (
+                                              <Badge variant="outline" className="text-xs">
+                                                Ritual
+                                              </Badge>
+                                            )}
+                                          </div>
                                         </div>
-                                      </div>
-                                      <div className="text-sm text-muted-foreground space-y-1">
-                                        <div><strong>Casting Time:</strong> {spell.casting_time}</div>
-                                        <div><strong>Range:</strong> {spell.range}</div>
-                                        <div><strong>Components:</strong> {spell.components}</div>
-                                        <div><strong>Duration:</strong> {spell.duration}</div>
-                                      </div>
-                                      <div className="mt-3 text-sm">
-                                        <strong>Description:</strong> {spell.description}
-                                      </div>
-                                    </Card>
-                                  ))}
+                                        <div className="text-sm text-muted-foreground space-y-1">
+                                          <div><strong>Casting Time:</strong> {spellData?.time || '1 action'}</div>
+                                          <div><strong>Range:</strong> {spellData?.range || 'Unknown'}</div>
+                                          <div><strong>Components:</strong> {spellData?.components || 'Unknown'}</div>
+                                          <div><strong>Duration:</strong> {spellData?.duration || 'Unknown'}</div>
+                                        </div>
+                                        <div className="mt-3 text-sm">
+                                          <strong>Description:</strong> {entry.text || 'No description available.'}
+                                        </div>
+                                      </Card>
+                                    );
+                                  })}
                               </div>
                             </div>
                           ))}
@@ -555,7 +568,7 @@ export default function Show({ character }: CharacterShowProps) {
                     </Card>
                   )}
 
-                  {character.spells_known.length === 0 && character.spell_slots.length === 0 && (
+                  {(!character.selectedSpells || character.selectedSpells.length === 0) && character.spell_slots.length === 0 && (
                     <Card>
                       <CardContent className="p-12 text-center">
                         <Sparkles className="h-12 w-12 text-muted-foreground mx-auto mb-3" />

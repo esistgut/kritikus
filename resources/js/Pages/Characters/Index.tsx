@@ -52,8 +52,8 @@ export default function Index({ characters }: CharactersIndexProps) {
                       <div>
                         <CardTitle className="text-lg">{character.name}</CardTitle>
                         <div className="flex flex-wrap gap-1 mt-2">
-                          <Badge variant="secondary">{character.race}</Badge>
-                          <Badge variant="outline">{character.class}</Badge>
+                          <Badge variant="secondary">{character.race?.name || 'Unknown Race'}</Badge>
+                          <Badge variant="outline">{character.character_class?.name || 'Unknown Class'}</Badge>
                           <Badge variant="default">Level {character.level}</Badge>
                         </div>
                       </div>

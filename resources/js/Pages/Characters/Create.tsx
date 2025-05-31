@@ -63,7 +63,6 @@ interface CharacterFormData {
   spell_attack_bonus: number;
   spell_save_dc: number;
   spell_slots: any[];
-  spells_known: any[];
 }
 
 const SKILLS = [
@@ -126,7 +125,6 @@ export default function Create({ compendiumData }: { compendiumData: CompendiumD
     spell_attack_bonus: 0,
     spell_save_dc: 8,
     spell_slots: [],
-    spells_known: [],
   });
 
   const handleSubmit = (e: React.FormEvent) => {

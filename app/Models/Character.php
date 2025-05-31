@@ -52,7 +52,6 @@ class Character extends Model
         'spell_attack_bonus',
         'spell_save_dc',
         'spell_slots',
-        'spells_known',
         'selected_spell_ids',
         'selected_feat_ids',
         'selected_item_ids',
@@ -69,7 +68,6 @@ class Character extends Model
         'attacks_and_spells' => 'array',
         'equipment' => 'array',
         'spell_slots' => 'array',
-        'spells_known' => 'array',
         'selected_spell_ids' => 'array',
         'selected_feat_ids' => 'array',
         'selected_item_ids' => 'array',
@@ -113,7 +111,7 @@ class Character extends Model
         return $this->belongsTo(CompendiumEntry::class, 'race_id');
     }
 
-    public function characterClass()
+    public function character_class()
     {
         return $this->belongsTo(CompendiumEntry::class, 'class_id');
     }
@@ -126,18 +124,33 @@ class Character extends Model
     // Get selected spells
     public function selectedSpells()
     {
-        return CompendiumEntry::whereIn('id', $this->selected_spell_ids ?? [])->get();
+        if (empty($this->selected_spell_ids)) {
+            return collect([]);
+        }
+        return CompendiumEntry::whereIn('id', $this->selected_spell_ids)
+            ->with('spell')
+            ->get();
     }
 
     // Get selected feats
     public function selectedFeats()
     {
-        return CompendiumEntry::whereIn('id', $this->selected_feat_ids ?? [])->get();
+        if (empty($this->selected_feat_ids)) {
+            return collect([]);
+        }
+        return CompendiumEntry::whereIn('id', $this->selected_feat_ids)
+            ->with('feat')
+            ->get();
     }
 
     // Get selected items
     public function selectedItems()
     {
-        return CompendiumEntry::whereIn('id', $this->selected_item_ids ?? [])->get();
+        if (empty($this->selected_item_ids)) {
+            return collect([]);
+        }
+        return CompendiumEntry::whereIn('id', $this->selected_item_ids)
+            ->with('item')
+            ->get();
     }
 }

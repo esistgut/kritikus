@@ -22,6 +22,14 @@ export interface Character {
     selected_feat_ids?: number[];
     selected_item_ids?: number[];
 
+    // Compendium relations (populated by Laravel)
+    race?: CompendiumEntry;
+    character_class?: CompendiumEntry;
+    background?: CompendiumEntry;
+    selectedSpells?: CompendiumEntry[];
+    selectedFeats?: CompendiumEntry[];
+    selectedItems?: CompendiumEntry[];
+
     level: number;
     experience: number;
 
@@ -76,7 +84,6 @@ export interface Character {
     spell_attack_bonus: number;
     spell_save_dc: number;
     spell_slots: SpellSlot[];
-    spells_known: Spell[];
 
     created_at: string;
     updated_at: string;
@@ -156,6 +163,22 @@ export interface CompendiumEntry {
     created_at: string;
     updated_at: string;
     specific_data?: any;
+    // Spell-specific relationship
+    spell?: {
+        id: number;
+        compendium_entry_id: number;
+        level: number;
+        school: string;
+        ritual: boolean;
+        time?: string;
+        range?: string;
+        components?: string;
+        duration?: string;
+        classes?: string;
+        rolls?: string;
+        created_at: string;
+        updated_at: string;
+    };
 }
 
 export interface CompendiumSpell {

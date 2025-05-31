@@ -99,7 +99,6 @@ class CharacterSeeder extends Seeder
             'spell_attack_bonus' => 0,
             'spell_save_dc' => 8,
             'spell_slots' => [],
-            'spells_known' => []
         ]);
 
         Character::create([
@@ -187,41 +186,6 @@ class CharacterSeeder extends Seeder
                 ['level' => 1, 'total' => 4, 'used' => 0],
                 ['level' => 2, 'total' => 2, 'used' => 0]
             ],
-            'spells_known' => [
-                [
-                    'name' => 'Magic Missile',
-                    'level' => 1,
-                    'school' => 'Evocation',
-                    'casting_time' => '1 action',
-                    'range' => '120 feet',
-                    'components' => 'V, S',
-                    'duration' => 'Instantaneous',
-                    'description' => 'Three darts of magical force hit their targets.',
-                    'prepared' => true
-                ],
-                [
-                    'name' => 'Shield',
-                    'level' => 1,
-                    'school' => 'Abjuration',
-                    'casting_time' => '1 reaction',
-                    'range' => 'Self',
-                    'components' => 'V, S',
-                    'duration' => '1 round',
-                    'description' => 'An invisible barrier of magical force appears and protects you.',
-                    'prepared' => true
-                ],
-                [
-                    'name' => 'Detect Magic',
-                    'level' => 1,
-                    'school' => 'Divination',
-                    'casting_time' => '1 action',
-                    'range' => 'Self',
-                    'components' => 'V, S',
-                    'duration' => 'Concentration, up to 10 minutes',
-                    'description' => 'You sense the presence of magic within 30 feet of you.',
-                    'prepared' => true
-                ]
-            ]
         ]);
     }
 }

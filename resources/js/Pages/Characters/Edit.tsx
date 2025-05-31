@@ -84,7 +84,6 @@ export default function Edit({ character, compendiumData }: CharacterEditProps) 
     spell_attack_bonus: character.spell_attack_bonus,
     spell_save_dc: character.spell_save_dc,
     spell_slots: character.spell_slots,
-    spells_known: character.spells_known,
   });
 
   // Map Edit tabs back to Show tabs
@@ -129,118 +128,26 @@ export default function Edit({ character, compendiumData }: CharacterEditProps) 
     }
   };
 
-  // New spell form state
-  const [newSpell, setNewSpell] = React.useState({
-    name: '',
-    level: 0,
-    school: '',
-    casting_time: '',
-    range: '',
-    components: '',
-    duration: '',
-    description: '',
-    prepared: false
-  });
+  // Spell filtering state
+  const [spellSearch, setSpellSearch] = React.useState('');
+  const [spellLevelFilter, setSpellLevelFilter] = React.useState('all');
+  const [spellSchoolFilter, setSpellSchoolFilter] = React.useState('all');
 
-  // Editing spells state
-  const [editingSpellIndex, setEditingSpellIndex] = React.useState<number | null>(null);
-  const [editingSpell, setEditingSpell] = React.useState({
-    name: '',
-    level: 0,
-    school: '',
-    casting_time: '',
-    range: '',
-    components: '',
-    duration: '',
-    description: '',
-    prepared: false
-  });
+  // Filter spells based on search and filters
+  const filteredSpells = React.useMemo(() => {
+    return compendiumData.spells.filter(spell => {
+      const matchesSearch = !spellSearch ||
+        spell.compendium_entry?.name.toLowerCase().includes(spellSearch.toLowerCase());
+      const matchesLevel = spellLevelFilter === 'all' ||
+        spell.level.toString() === spellLevelFilter;
+      const matchesSchool = spellSchoolFilter === 'all' ||
+        spell.school.toLowerCase() === spellSchoolFilter.toLowerCase();
 
-  const handleAddSpell = () => {
-    if (newSpell.name.trim()) {
-      const spellToAdd = {
-        name: newSpell.name.trim(),
-        level: newSpell.level,
-        school: newSpell.school.trim() || 'Evocation',
-        casting_time: newSpell.casting_time.trim() || '1 action',
-        range: newSpell.range.trim() || 'Self',
-        components: newSpell.components.trim() || 'V, S',
-        duration: newSpell.duration.trim() || 'Instantaneous',
-        description: newSpell.description.trim() || 'No description provided.',
-        prepared: newSpell.prepared
-      };
-
-      setData('spells_known', [...(data.spells_known || []), spellToAdd]);
-
-      // Reset form
-      setNewSpell({
-        name: '',
-        level: 0,
-        school: '',
-        casting_time: '',
-        range: '',
-        components: '',
-        duration: '',
-        description: '',
-        prepared: false
-      });
-    }
-  };
-
-  const handleEditSpell = (index: number) => {
-    const spell = data.spells_known[index];
-    setEditingSpellIndex(index);
-    setEditingSpell({
-      ...spell,
-      prepared: spell.prepared || false
+      return matchesSearch && matchesLevel && matchesSchool;
     });
-  };
+  }, [compendiumData.spells, spellSearch, spellLevelFilter, spellSchoolFilter]);
 
-  const handleSaveSpellEdit = () => {
-    if (editingSpellIndex !== null && editingSpell.name.trim()) {
-      const newSpells = [...data.spells_known];
-      newSpells[editingSpellIndex] = {
-        name: editingSpell.name.trim(),
-        level: editingSpell.level,
-        school: editingSpell.school.trim() || 'Evocation',
-        casting_time: editingSpell.casting_time.trim() || '1 action',
-        range: editingSpell.range.trim() || 'Self',
-        components: editingSpell.components.trim() || 'V, S',
-        duration: editingSpell.duration.trim() || 'Instantaneous',
-        description: editingSpell.description.trim() || 'No description provided.',
-        prepared: editingSpell.prepared
-      };
 
-      setData('spells_known', newSpells);
-      setEditingSpellIndex(null);
-      setEditingSpell({
-        name: '',
-        level: 0,
-        school: '',
-        casting_time: '',
-        range: '',
-        components: '',
-        duration: '',
-        description: '',
-        prepared: false
-      });
-    }
-  };
-
-  const handleCancelSpellEdit = () => {
-    setEditingSpellIndex(null);
-    setEditingSpell({
-      name: '',
-      level: 0,
-      school: '',
-      casting_time: '',
-      range: '',
-      components: '',
-      duration: '',
-      description: '',
-      prepared: false
-    });
-  };
 
   return (
     <AppLayout>
@@ -759,270 +666,172 @@ export default function Edit({ character, compendiumData }: CharacterEditProps) 
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-4">
-                        {data.spells_known && data.spells_known.length > 0 ? (
+                        {/* Selected Spells Display */}
+                        {data.selected_spell_ids && data.selected_spell_ids.length > 0 ? (
                           <div className="space-y-3">
-                            {data.spells_known.map((spell, index) => (
-                              <div key={index} className="p-4 border rounded-lg">
-                                {editingSpellIndex === index ? (
-                                  // Editing mode
-                                  <div className="space-y-4">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                      <div>
-                                        <Label htmlFor={`edit_spell_name_${index}`}>Spell Name</Label>
-                                        <Input
-                                          id={`edit_spell_name_${index}`}
-                                          value={editingSpell.name}
-                                          onChange={(e) => setEditingSpell({...editingSpell, name: e.target.value})}
-                                        />
-                                      </div>
-                                      <div>
-                                        <Label htmlFor={`edit_spell_level_${index}`}>Level</Label>
-                                        <Input
-                                          id={`edit_spell_level_${index}`}
-                                          type="number"
-                                          min="0"
-                                          max="9"
-                                          value={editingSpell.level}
-                                          onChange={(e) => setEditingSpell({...editingSpell, level: parseInt(e.target.value) || 0})}
-                                        />
-                                      </div>
-                                      <div>
-                                        <Label htmlFor={`edit_spell_school_${index}`}>School</Label>
-                                        <Input
-                                          id={`edit_spell_school_${index}`}
-                                          value={editingSpell.school}
-                                          onChange={(e) => setEditingSpell({...editingSpell, school: e.target.value})}
-                                        />
-                                      </div>
-                                      <div>
-                                        <Label htmlFor={`edit_spell_casting_time_${index}`}>Casting Time</Label>
-                                        <Input
-                                          id={`edit_spell_casting_time_${index}`}
-                                          value={editingSpell.casting_time}
-                                          onChange={(e) => setEditingSpell({...editingSpell, casting_time: e.target.value})}
-                                        />
-                                      </div>
-                                      <div>
-                                        <Label htmlFor={`edit_spell_range_${index}`}>Range</Label>
-                                        <Input
-                                          id={`edit_spell_range_${index}`}
-                                          value={editingSpell.range}
-                                          onChange={(e) => setEditingSpell({...editingSpell, range: e.target.value})}
-                                        />
-                                      </div>
-                                      <div>
-                                        <Label htmlFor={`edit_spell_components_${index}`}>Components</Label>
-                                        <Input
-                                          id={`edit_spell_components_${index}`}
-                                          value={editingSpell.components}
-                                          onChange={(e) => setEditingSpell({...editingSpell, components: e.target.value})}
-                                        />
-                                      </div>
-                                      <div>
-                                        <Label htmlFor={`edit_spell_duration_${index}`}>Duration</Label>
-                                        <Input
-                                          id={`edit_spell_duration_${index}`}
-                                          value={editingSpell.duration}
-                                          onChange={(e) => setEditingSpell({...editingSpell, duration: e.target.value})}
-                                        />
-                                      </div>
-                                      <div className="flex items-center space-x-2">
-                                        <Checkbox
-                                          id={`edit_spell_prepared_${index}`}
-                                          checked={editingSpell.prepared}
-                                          onCheckedChange={(checked) => setEditingSpell({...editingSpell, prepared: checked as boolean})}
-                                        />
-                                        <Label htmlFor={`edit_spell_prepared_${index}`}>Prepared</Label>
-                                      </div>
-                                    </div>
-                                    <div>
-                                      <Label htmlFor={`edit_spell_description_${index}`}>Description</Label>
-                                      <Textarea
-                                        id={`edit_spell_description_${index}`}
-                                        value={editingSpell.description}
-                                        onChange={(e) => setEditingSpell({...editingSpell, description: e.target.value})}
-                                      />
-                                    </div>
-                                    <div className="flex justify-end space-x-2">
-                                      <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={handleCancelSpellEdit}
-                                      >
-                                        Cancel
-                                      </Button>
-                                      <Button
-                                        type="button"
-                                        size="sm"
-                                        onClick={handleSaveSpellEdit}
-                                      >
-                                        Save Changes
-                                      </Button>
-                                    </div>
-                                  </div>
-                                ) : (
-                                  // Display mode
+                            {data.selected_spell_ids.map((spellId) => {
+                              const spellEntry = compendiumData.spells.find(s => s.compendium_entry_id === spellId);
+                              if (!spellEntry) return null;
+
+                              return (
+                                <div key={spellId} className="p-4 border rounded-lg">
                                   <div className="flex items-start justify-between">
                                     <div className="flex-1">
                                       <div className="flex items-center space-x-2 mb-2">
-                                        <h4 className="font-medium">{spell.name}</h4>
+                                        <h4 className="font-medium">{spellEntry.compendium_entry?.name}</h4>
                                         <span className="text-sm bg-purple-100 text-purple-800 px-2 py-1 rounded">
-                                          Level {spell.level}
+                                          Level {spellEntry.level}
                                         </span>
                                         <span className="text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                                          {spell.school}
+                                          {spellEntry.school}
                                         </span>
-                                        {spell.prepared && (
-                                          <span className="text-sm bg-green-100 text-green-800 px-2 py-1 rounded">
-                                            Prepared
+                                        {spellEntry.ritual && (
+                                          <span className="text-sm bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
+                                            Ritual
                                           </span>
                                         )}
                                       </div>
                                       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm text-muted-foreground mb-2">
-                                        <div><strong>Casting Time:</strong> {spell.casting_time}</div>
-                                        <div><strong>Range:</strong> {spell.range}</div>
-                                        <div><strong>Components:</strong> {spell.components}</div>
-                                        <div><strong>Duration:</strong> {spell.duration}</div>
+                                        <div><strong>Casting Time:</strong> {spellEntry.casting_time || 'Unknown'}</div>
+                                        <div><strong>Range:</strong> {spellEntry.range || 'Unknown'}</div>
+                                        <div><strong>Components:</strong> {spellEntry.components || 'Unknown'}</div>
+                                        <div><strong>Duration:</strong> {spellEntry.duration || 'Unknown'}</div>
                                       </div>
-                                      <p className="text-sm">{spell.description}</p>
+                                      <p className="text-sm">{spellEntry.compendium_entry?.text || 'No description available.'}</p>
                                     </div>
                                     <div className="flex items-center space-x-2 ml-4">
-                                      <Checkbox
-                                        checked={spell.prepared || false}
-                                        onCheckedChange={(checked) => {
-                                          const newSpells = [...data.spells_known];
-                                          newSpells[index].prepared = checked as boolean;
-                                          setData('spells_known', newSpells);
-                                        }}
-                                      />
-                                      <Label className="text-sm">Prepared</Label>
-                                      <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => handleEditSpell(index)}
-                                      >
-                                        Edit
-                                      </Button>
                                       <Button
                                         type="button"
                                         variant="outline"
                                         size="sm"
                                         onClick={() => {
-                                          const newSpells = data.spells_known.filter((_, i) => i !== index);
-                                          setData('spells_known', newSpells);
+                                          const newSpellIds = data.selected_spell_ids.filter(id => id !== spellId);
+                                          setData('selected_spell_ids', newSpellIds);
                                         }}
                                       >
                                         Remove
                                       </Button>
                                     </div>
                                   </div>
-                                )}
-                              </div>
-                            ))}
+                                </div>
+                              );
+                            })}
                           </div>
                         ) : (
                           <div className="text-center py-4 text-muted-foreground">
-                            <p>No spells known yet.</p>
+                            <p>No spells selected yet.</p>
                           </div>
                         )}
 
+                        {/* Add New Spell Selector */}
                         <div className="border-t pt-4">
-                          <h5 className="font-medium mb-3">Add New Spell</h5>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                              <Label htmlFor="new_spell_name">Spell Name</Label>
-                              <Input
-                                id="new_spell_name"
-                                placeholder="Enter spell name"
-                                value={newSpell.name}
-                                onChange={(e) => setNewSpell({...newSpell, name: e.target.value})}
-                              />
+                          <h5 className="font-medium mb-3">Add Spells from Compendium</h5>
+                          <div className="space-y-4">
+                            {/* Spell Search and Filter */}
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                              <div>
+                                <Label htmlFor="spell_search">Search Spells</Label>
+                                <Input
+                                  id="spell_search"
+                                  placeholder="Search spell names..."
+                                  value={spellSearch}
+                                  onChange={(e) => setSpellSearch(e.target.value)}
+                                />
+                              </div>
+                              <div>
+                                <Label htmlFor="spell_level_filter">Filter by Level</Label>
+                                <Select value={spellLevelFilter} onValueChange={setSpellLevelFilter}>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="All levels" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="all">All levels</SelectItem>
+                                    {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(level => (
+                                      <SelectItem key={level} value={level.toString()}>Level {level}</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div>
+                                <Label htmlFor="spell_school_filter">Filter by School</Label>
+                                <Select value={spellSchoolFilter} onValueChange={setSpellSchoolFilter}>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="All schools" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="all">All schools</SelectItem>
+                                    <SelectItem value="abjuration">Abjuration</SelectItem>
+                                    <SelectItem value="conjuration">Conjuration</SelectItem>
+                                    <SelectItem value="divination">Divination</SelectItem>
+                                    <SelectItem value="enchantment">Enchantment</SelectItem>
+                                    <SelectItem value="evocation">Evocation</SelectItem>
+                                    <SelectItem value="illusion">Illusion</SelectItem>
+                                    <SelectItem value="necromancy">Necromancy</SelectItem>
+                                    <SelectItem value="transmutation">Transmutation</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
                             </div>
-                            <div>
-                              <Label htmlFor="new_spell_level">Level</Label>
-                              <Input
-                                id="new_spell_level"
-                                type="number"
-                                min="0"
-                                max="9"
-                                placeholder="0-9"
-                                value={newSpell.level}
-                                onChange={(e) => setNewSpell({...newSpell, level: parseInt(e.target.value) || 0})}
-                              />
-                            </div>
-                            <div>
-                              <Label htmlFor="new_spell_school">School</Label>
-                              <Input
-                                id="new_spell_school"
-                                placeholder="e.g., Evocation"
-                                value={newSpell.school}
-                                onChange={(e) => setNewSpell({...newSpell, school: e.target.value})}
-                              />
-                            </div>
-                            <div>
-                              <Label htmlFor="new_spell_casting_time">Casting Time</Label>
-                              <Input
-                                id="new_spell_casting_time"
-                                placeholder="e.g., 1 action"
-                                value={newSpell.casting_time}
-                                onChange={(e) => setNewSpell({...newSpell, casting_time: e.target.value})}
-                              />
-                            </div>
-                            <div>
-                              <Label htmlFor="new_spell_range">Range</Label>
-                              <Input
-                                id="new_spell_range"
-                                placeholder="e.g., 120 feet"
-                                value={newSpell.range}
-                                onChange={(e) => setNewSpell({...newSpell, range: e.target.value})}
-                              />
-                            </div>
-                            <div>
-                              <Label htmlFor="new_spell_components">Components</Label>
-                              <Input
-                                id="new_spell_components"
-                                placeholder="e.g., V, S, M"
-                                value={newSpell.components}
-                                onChange={(e) => setNewSpell({...newSpell, components: e.target.value})}
-                              />
-                            </div>
-                            <div>
-                              <Label htmlFor="new_spell_duration">Duration</Label>
-                              <Input
-                                id="new_spell_duration"
-                                placeholder="e.g., Instantaneous"
-                                value={newSpell.duration}
-                                onChange={(e) => setNewSpell({...newSpell, duration: e.target.value})}
-                              />
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <Checkbox
-                                id="new_spell_prepared"
-                                checked={newSpell.prepared}
-                                onCheckedChange={(checked) => setNewSpell({...newSpell, prepared: checked as boolean})}
-                              />
-                              <Label htmlFor="new_spell_prepared">Prepared</Label>
+
+                            {/* Available Spells List */}
+                            <div className="max-h-60 overflow-y-auto border rounded-lg">
+                              {filteredSpells.length > 0 ? (
+                                <div className="space-y-1 p-2">
+                                  {filteredSpells.slice(0, 50).map((spell) => {
+                                    const isSelected = data.selected_spell_ids.includes(spell.compendium_entry_id);
+                                    return (
+                                      <div
+                                        key={spell.id}
+                                        className={`flex items-center justify-between p-2 rounded hover:bg-gray-50 ${
+                                          isSelected ? 'bg-blue-50 border border-blue-200' : ''
+                                        }`}
+                                      >
+                                        <div className="flex-1">
+                                          <div className="flex items-center space-x-2">
+                                            <span className="font-medium">{spell.compendium_entry?.name}</span>
+                                            <span className="text-xs bg-purple-100 text-purple-800 px-1 py-0.5 rounded">
+                                              Level {spell.level}
+                                            </span>
+                                            <span className="text-xs bg-blue-100 text-blue-800 px-1 py-0.5 rounded">
+                                              {spell.school}
+                                            </span>
+                                            {spell.ritual && (
+                                              <span className="text-xs bg-yellow-100 text-yellow-800 px-1 py-0.5 rounded">
+                                                Ritual
+                                              </span>
+                                            )}
+                                          </div>
+                                        </div>
+                                        <Button
+                                          type="button"
+                                          variant={isSelected ? "secondary" : "outline"}
+                                          size="sm"
+                                          onClick={() => {
+                                            if (isSelected) {
+                                              setData('selected_spell_ids', data.selected_spell_ids.filter(id => id !== spell.compendium_entry_id));
+                                            } else {
+                                              setData('selected_spell_ids', [...data.selected_spell_ids, spell.compendium_entry_id]);
+                                            }
+                                          }}
+                                        >
+                                          {isSelected ? 'Remove' : 'Add'}
+                                        </Button>
+                                      </div>
+                                    );
+                                  })}
+                                  {filteredSpells.length > 50 && (
+                                    <div className="text-center py-2 text-sm text-muted-foreground">
+                                      Showing first 50 results. Use search to refine.
+                                    </div>
+                                  )}
+                                </div>
+                              ) : (
+                                <div className="text-center py-8 text-muted-foreground">
+                                  <p>No spells found matching your criteria.</p>
+                                </div>
+                              )}
                             </div>
                           </div>
-                          <div className="mt-4">
-                            <Label htmlFor="new_spell_description">Description</Label>
-                            <Textarea
-                              id="new_spell_description"
-                              placeholder="Enter spell description..."
-                              value={newSpell.description}
-                              onChange={(e) => setNewSpell({...newSpell, description: e.target.value})}
-                            />
-                          </div>
-                          <Button
-                            type="button"
-                            className="mt-4"
-                            onClick={handleAddSpell}
-                            disabled={!newSpell.name.trim()}
-                          >
-                            Add Spell
-                          </Button>
                         </div>
                       </div>
                     </CardContent>

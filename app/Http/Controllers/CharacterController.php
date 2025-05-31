@@ -31,7 +31,10 @@ class CharacterController extends Controller
         $this->authorize('viewAny', Character::class);
 
         return Inertia::render('Characters/Index', [
-            'characters' => auth()->user()->characters()->orderBy('name')->get(),
+            'characters' => auth()->user()->characters()
+                ->with(['race', 'character_class', 'background'])
+                ->orderBy('name')
+                ->get(),
         ]);
     }
 
@@ -120,7 +123,6 @@ class CharacterController extends Controller
             'spell_attack_bonus' => 'integer',
             'spell_save_dc' => 'integer',
             'spell_slots' => 'array',
-            'spells_known' => 'array',
             'selected_spell_ids' => 'array',
             'selected_spell_ids.*' => 'exists:compendium_entries,id',
             'selected_feat_ids' => 'array',
@@ -142,6 +144,14 @@ class CharacterController extends Controller
     {
         $this->authorize('view', $character);
 
+        // Load the character with compendium relationships
+        $character->load(['race', 'character_class', 'background']);
+
+        // Add selected items as attributes
+        $character->selectedSpells = $character->selectedSpells();
+        $character->selectedFeats = $character->selectedFeats();
+        $character->selectedItems = $character->selectedItems();
+
         return Inertia::render('Characters/Show', [
             'character' => $character,
         ]);
@@ -153,6 +163,14 @@ class CharacterController extends Controller
     public function edit(Character $character)
     {
         $this->authorize('update', $character);
+
+        // Load the character with compendium relationships
+        $character->load(['race', 'character_class', 'background']);
+
+        // Add selected items as attributes
+        $character->selectedSpells = $character->selectedSpells();
+        $character->selectedFeats = $character->selectedFeats();
+        $character->selectedItems = $character->selectedItems();
 
         return Inertia::render('Characters/Edit', [
             'character' => $character,
@@ -235,7 +253,6 @@ class CharacterController extends Controller
             'spell_attack_bonus' => 'integer',
             'spell_save_dc' => 'integer',
             'spell_slots' => 'array',
-            'spells_known' => 'array',
             'selected_spell_ids' => 'array',
             'selected_spell_ids.*' => 'exists:compendium_entries,id',
             'selected_feat_ids' => 'array',
