@@ -9,29 +9,50 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\Response;
 
-class AutoLoginMiddleware
+class AutoLoginAuth
 {
     /**
      * Handle an incoming request.
-     *
-     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
-     */    public function handle(Request $request, Closure $next): Response
+     * This middleware combines auto-login functionality with authentication checking.
+     */
+    public function handle(Request $request, Closure $next, ...$guards): Response
+    {
+        // Perform auto-login first if conditions are met
+        $this->performAutoLogin($request);
+
+        // Then perform standard auth check
+        $guards = empty($guards) ? [null] : $guards;
+
+        foreach ($guards as $guard) {
+            if (Auth::guard($guard)->check()) {
+                Auth::shouldUse($guard);
+                return $next($request);
+            }
+        }
+
+        return $this->unauthenticated($request, $guards);
+    }
+
+    /**
+     * Perform auto-login if conditions are met
+     */
+    protected function performAutoLogin(Request $request): void
     {
         // Only run auto-login in local environment
         if (config('app.env') !== 'local') {
-            return $next($request);
+            return;
+        }
+
+        // Skip if user is already authenticated
+        if (Auth::check()) {
+            return;
         }
 
         // Check if AUTO_LOGIN_USER_ID is set
         $autoLoginUserId = config('app.auto_login_user_id');
 
         if (!$autoLoginUserId) {
-            return $next($request);
-        }
-
-        // Skip if user is already authenticated
-        if (Auth::check()) {
-            return $next($request);
+            return;
         }
 
         try {
@@ -63,7 +84,17 @@ class AutoLoginMiddleware
                 'error' => $e->getMessage(),
             ]);
         }
+    }
 
-        return $next($request);
+    /**
+     * Handle an unauthenticated user.
+     */
+    protected function unauthenticated(Request $request, array $guards): Response
+    {
+        if ($request->expectsJson()) {
+            return response()->json(['message' => 'Unauthenticated.'], 401);
+        }
+
+        return redirect()->guest(route('login'));
     }
 }

@@ -11,8 +11,12 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        // Register custom auth middleware that includes auto-login
+        $middleware->alias([
+            'auto.auth' => \App\Http\Middleware\AutoLoginAuth::class,
+        ]);
+
         $middleware->web(append: [
-            \App\Http\Middleware\AutoLoginMiddleware::class,
             \App\Http\Middleware\HandleInertiaRequests::class,
         ]);
 

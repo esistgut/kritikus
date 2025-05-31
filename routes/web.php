@@ -19,7 +19,7 @@ Route::middleware('guest')->group(function () {
 Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
 
 // Protected routes - require authentication
-Route::middleware('auth')->group(function () {
+Route::middleware('auto.auth')->group(function () {
     // Dashboard route (new default page)
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
 
