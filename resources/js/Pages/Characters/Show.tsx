@@ -1,6 +1,6 @@
 import { Head, Link } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import AppLayout from '@/Layouts/AppLayout';
@@ -33,6 +33,7 @@ export default function Show({ character }: CharacterShowProps) {
       'abilities': 'abilities',
       'combat': 'combat',
       'spells': 'spells',
+      'inventory': 'inventory',
       'skills': 'skills',
       'character': 'character'
     };
@@ -131,11 +132,12 @@ export default function Show({ character }: CharacterShowProps) {
           </div>
 
           <Tabs defaultValue="overview" className="space-y-6" value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-6">
+            <TabsList className="grid w-full grid-cols-7">
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="abilities">Abilities</TabsTrigger>
               <TabsTrigger value="combat">Combat</TabsTrigger>
               <TabsTrigger value="spells">Spells</TabsTrigger>
+              <TabsTrigger value="inventory">Inventory</TabsTrigger>
               <TabsTrigger value="skills">Skills</TabsTrigger>
               <TabsTrigger value="character">Character</TabsTrigger>
             </TabsList>
@@ -591,6 +593,88 @@ export default function Show({ character }: CharacterShowProps) {
                   </CardContent>
                 </Card>
               )}
+            </TabsContent>
+
+            <TabsContent value="inventory">
+              <div className="space-y-6">
+                {character.selectedItems && character.selectedItems.length > 0 ? (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Inventory ({character.selectedItems.length} items)</CardTitle>
+                      <CardDescription>
+                        Items carried by this character
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        {character.selectedItems.map((itemEntry: any, index: number) => {
+                          const item = itemEntry.item || itemEntry;
+                          return (
+                            <div key={index} className="p-4 border rounded-lg">
+                              <div className="flex items-start justify-between">
+                                <div className="flex-1">
+                                  <div className="flex items-center space-x-2 mb-2">
+                                    <h4 className="font-medium">{itemEntry.name}</h4>
+                                    <span className="text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                                      {item?.type || 'Item'}
+                                    </span>
+                                    {item?.magic && (
+                                      <span className="text-sm bg-purple-100 text-purple-800 px-2 py-1 rounded">
+                                        Magic
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="text-sm text-muted-foreground space-y-1">
+                                    {item?.weight && (
+                                      <div><strong>Weight:</strong> {item.weight} lbs</div>
+                                    )}
+                                    {item?.value && (
+                                      <div><strong>Value:</strong> {item.value} gp</div>
+                                    )}
+                                    {item?.ac && (
+                                      <div><strong>AC:</strong> {item.ac}</div>
+                                    )}
+                                    {item?.dmg1 && (
+                                      <div><strong>Damage:</strong> {item.dmg1} {item.dmgType || ''}</div>
+                                    )}
+                                    {item?.range && (
+                                      <div><strong>Range:</strong> {item.range}</div>
+                                    )}
+                                  </div>
+                                  {itemEntry.text && (
+                                    <div className="mt-2 text-sm">
+                                      <p className="line-clamp-3">{itemEntry.text}</p>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <Card>
+                    <CardContent className="p-12 text-center">
+                      <div className="h-12 w-12 text-muted-foreground mx-auto mb-3">
+                        <svg className="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                        </svg>
+                      </div>
+                      <h3 className="text-lg font-semibold mb-2">No Items in Inventory</h3>
+                      <p className="text-muted-foreground mb-4">
+                        This character doesn't have any items in their inventory yet.
+                      </p>
+                      <Link href={`/characters/${character.id}/edit?tab=inventory`}>
+                        <Button variant="outline">
+                          Add Items
+                        </Button>
+                      </Link>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
             </TabsContent>
 
             <TabsContent value="character">

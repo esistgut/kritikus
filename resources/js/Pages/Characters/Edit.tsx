@@ -1,5 +1,5 @@
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -93,6 +93,7 @@ export default function Edit({ character, compendiumData }: CharacterEditProps) 
       'abilities': 'abilities',
       'combat': 'combat',
       'spells': 'spells',
+      'inventory': 'inventory',
       'skills': 'skills',
       'character': 'character'
     };
@@ -101,11 +102,24 @@ export default function Edit({ character, compendiumData }: CharacterEditProps) 
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Log form data for debugging
+    console.log('Form submission data:', data);
+    console.log('Current active tab:', activeTab);
+    console.log('Selected item IDs:', data.selected_item_ids);
+
     // Get the tab parameter based on current active tab
     const tabToSend = getShowTab(activeTab);
 
     // Send the tab as a query parameter in the URL
-    put(`/characters/${character.id}?tab=${tabToSend}`);
+    put(`/characters/${character.id}?tab=${tabToSend}`, {
+      onSuccess: () => {
+        console.log('Form submitted successfully');
+      },
+      onError: (errors) => {
+        console.log('Form submission errors:', errors);
+      }
+    });
   };
 
   const getAbilityModifier = (score: number): number => {
@@ -133,6 +147,10 @@ export default function Edit({ character, compendiumData }: CharacterEditProps) 
   const [spellLevelFilter, setSpellLevelFilter] = React.useState('all');
   const [spellSchoolFilter, setSpellSchoolFilter] = React.useState('all');
 
+  // Item search and filter state
+  const [itemSearchTerm, setItemSearchTerm] = React.useState('');
+  const [itemTypeFilter, setItemTypeFilter] = React.useState('all');
+
   // Filter spells based on search and filters
   const filteredSpells = React.useMemo(() => {
     return compendiumData.spells.filter(spell => {
@@ -146,6 +164,18 @@ export default function Edit({ character, compendiumData }: CharacterEditProps) 
       return matchesSearch && matchesLevel && matchesSchool;
     });
   }, [compendiumData.spells, spellSearch, spellLevelFilter, spellSchoolFilter]);
+
+  // Filter items based on search and filters
+  const filteredItems = React.useMemo(() => {
+    return compendiumData.items.filter(item => {
+      const matchesSearch = !itemSearchTerm ||
+        item.compendium_entry?.name.toLowerCase().includes(itemSearchTerm.toLowerCase());
+      const matchesType = itemTypeFilter === 'all' ||
+        item.type === itemTypeFilter;
+
+      return matchesSearch && matchesType;
+    });
+  }, [compendiumData.items, itemSearchTerm, itemTypeFilter]);
 
 
 
@@ -170,11 +200,12 @@ export default function Edit({ character, compendiumData }: CharacterEditProps) 
 
           <form onSubmit={handleSubmit}>
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-              <TabsList className="grid w-full grid-cols-6">
+              <TabsList className="grid w-full grid-cols-7">
                 <TabsTrigger value="basic">Basic Info</TabsTrigger>
                 <TabsTrigger value="abilities">Abilities</TabsTrigger>
                 <TabsTrigger value="combat">Combat</TabsTrigger>
                 <TabsTrigger value="spells">Spells</TabsTrigger>
+                <TabsTrigger value="inventory">Inventory</TabsTrigger>
                 <TabsTrigger value="skills">Skills & Proficiencies</TabsTrigger>
                 <TabsTrigger value="character">Character Details</TabsTrigger>
               </TabsList>
@@ -839,6 +870,186 @@ export default function Edit({ character, compendiumData }: CharacterEditProps) 
                 </div>
               </TabsContent>
 
+              <TabsContent value="inventory">
+                <div className="space-y-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Inventory Management</CardTitle>
+                      <CardDescription>
+                        Add items from the compendium to your character's inventory
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        {/* Selected Items Display */}
+                        {data.selected_item_ids && data.selected_item_ids.length > 0 ? (
+                          <div>
+                            <h4 className="font-semibold mb-4">Current Inventory</h4>
+                            <div className="space-y-3">
+                              {data.selected_item_ids.map((itemId) => {
+                                const itemEntry = compendiumData.items.find(i => i.compendium_entry_id === itemId);
+                                if (!itemEntry) return null;
+
+                                return (
+                                  <div key={itemId} className="p-4 border rounded-lg">
+                                    <div className="flex items-start justify-between">
+                                      <div className="flex-1">
+                                        <div className="flex items-center space-x-2 mb-2">
+                                          <h4 className="font-medium">{itemEntry.compendium_entry?.name}</h4>
+                                          <span className="text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                                            {itemEntry.type || 'Item'}
+                                          </span>
+                                          {itemEntry.magic && (
+                                            <span className="text-sm bg-purple-100 text-purple-800 px-2 py-1 rounded">
+                                              Magic
+                                            </span>
+                                          )}
+                                        </div>
+                                        <div className="text-sm text-muted-foreground space-y-1">
+                                          {itemEntry.weight && (
+                                            <div><strong>Weight:</strong> {itemEntry.weight} lbs</div>
+                                          )}
+                                          {itemEntry.value && (
+                                            <div><strong>Value:</strong> {itemEntry.value} gp</div>
+                                          )}
+                                          {itemEntry.ac && (
+                                            <div><strong>AC:</strong> {itemEntry.ac}</div>
+                                          )}
+                                        </div>
+                                        {itemEntry.compendium_entry?.text && (
+                                          <div className="mt-2 text-sm">
+                                            <p className="line-clamp-3">{itemEntry.compendium_entry.text}</p>
+                                          </div>
+                                        )}
+                                      </div>
+                                      <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => {
+                                          const newItemIds = data.selected_item_ids.filter(id => id !== itemId);
+                                          setData('selected_item_ids', newItemIds);
+                                        }}
+                                      >
+                                        Remove
+                                      </Button>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="text-center py-8 text-muted-foreground">
+                            <p>No items in inventory. Add items from the compendium below.</p>
+                          </div>
+                        )}
+
+                        {/* Add Items Section */}
+                        <div>
+                          <h4 className="font-semibold mb-4">Add Items from Compendium</h4>
+                          <div className="space-y-4">
+                            {/* Search and Filter Controls */}
+                            <div className="flex gap-4">
+                              <div className="flex-1">
+                                <Input
+                                  placeholder="Search items..."
+                                  value={itemSearchTerm}
+                                  onChange={(e) => setItemSearchTerm(e.target.value)}
+                                />
+                              </div>
+                              <Select value={itemTypeFilter} onValueChange={setItemTypeFilter}>
+                                <SelectTrigger className="w-48">
+                                  <SelectValue placeholder="Filter by type" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="all">All Types</SelectItem>
+                                  <SelectItem value="A">Ammunition</SelectItem>
+                                  <SelectItem value="G">Gear</SelectItem>
+                                  <SelectItem value="M">Melee Weapon</SelectItem>
+                                  <SelectItem value="R">Ranged Weapon</SelectItem>
+                                  <SelectItem value="LA">Light Armor</SelectItem>
+                                  <SelectItem value="MA">Medium Armor</SelectItem>
+                                  <SelectItem value="HA">Heavy Armor</SelectItem>
+                                  <SelectItem value="S">Shield</SelectItem>
+                                  <SelectItem value="W">Wondrous Item</SelectItem>
+                                  <SelectItem value="P">Potion</SelectItem>
+                                  <SelectItem value="RG">Ring</SelectItem>
+                                  <SelectItem value="RD">Rod</SelectItem>
+                                  <SelectItem value="ST">Staff</SelectItem>
+                                  <SelectItem value="WD">Wand</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+
+                            {/* Items List */}
+                            <div className="max-h-60 overflow-y-auto border rounded-lg">
+                              {filteredItems.length > 0 ? (
+                                <div className="space-y-1 p-2">
+                                  {filteredItems.slice(0, 50).map((item) => {
+                                    const isSelected = data.selected_item_ids.includes(item.compendium_entry_id);
+                                    return (
+                                      <div
+                                        key={item.id}
+                                        className={`flex items-center justify-between p-2 rounded hover:bg-gray-50 ${
+                                          isSelected ? 'bg-blue-50 border border-blue-200' : ''
+                                        }`}
+                                      >
+                                        <div className="flex-1">
+                                          <div className="flex items-center space-x-2">
+                                            <span className="font-medium">{item.compendium_entry?.name}</span>
+                                            <span className="text-xs bg-blue-100 text-blue-800 px-1 py-0.5 rounded">
+                                              {item.type || 'Item'}
+                                            </span>
+                                            {item.magic && (
+                                              <span className="text-xs bg-purple-100 text-purple-800 px-1 py-0.5 rounded">
+                                                Magic
+                                              </span>
+                                            )}
+                                            {item.weight && (
+                                              <span className="text-xs bg-gray-100 text-gray-800 px-1 py-0.5 rounded">
+                                                {item.weight} lbs
+                                              </span>
+                                            )}
+                                          </div>
+                                        </div>
+                                        <Button
+                                          type="button"
+                                          variant={isSelected ? "secondary" : "outline"}
+                                          size="sm"
+                                          onClick={() => {
+                                            if (isSelected) {
+                                              setData('selected_item_ids', data.selected_item_ids.filter(id => id !== item.compendium_entry_id));
+                                            } else {
+                                              setData('selected_item_ids', [...data.selected_item_ids, item.compendium_entry_id]);
+                                            }
+                                          }}
+                                        >
+                                          {isSelected ? 'Remove' : 'Add'}
+                                        </Button>
+                                      </div>
+                                    );
+                                  })}
+                                  {filteredItems.length > 50 && (
+                                    <div className="text-center py-2 text-sm text-muted-foreground">
+                                      Showing first 50 results. Use search to refine.
+                                    </div>
+                                  )}
+                                </div>
+                              ) : (
+                                <div className="text-center py-8 text-muted-foreground">
+                                  <p>No items found matching your criteria.</p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </TabsContent>
+
               <TabsContent value="character">
                 <Card>
                   <CardHeader>
@@ -906,7 +1117,15 @@ export default function Edit({ character, compendiumData }: CharacterEditProps) 
                   Cancel
                 </Button>
               </Link>
-              <Button type="submit" disabled={processing}>
+              <Button
+                type="submit"
+                disabled={processing}
+                onClick={(e) => {
+                  // Ensure form submission works even when focus is in tabs
+                  e.preventDefault();
+                  handleSubmit(e);
+                }}
+              >
                 <Save className="h-4 w-4 mr-2" />
                 {processing ? 'Saving...' : 'Save Changes'}
               </Button>

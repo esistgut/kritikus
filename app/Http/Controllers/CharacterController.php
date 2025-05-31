@@ -259,7 +259,7 @@ class CharacterController extends Controller
             'selected_feat_ids.*' => 'exists:compendium_entries,id',
             'selected_item_ids' => 'array',
             'selected_item_ids.*' => 'exists:compendium_entries,id',
-            'tab' => 'nullable|string|in:overview,abilities,combat,spells,skills,character',
+            'tab' => 'nullable|string|in:overview,abilities,combat,spells,inventory,skills,character',
         ]);
 
         $character->update($validated);
