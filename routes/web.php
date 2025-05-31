@@ -3,6 +3,7 @@
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\CharacterController;
+use App\Http\Controllers\CompendiumController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\SoundController;
 use Illuminate\Support\Facades\Route;
@@ -29,4 +30,17 @@ Route::middleware('auth')->group(function () {
     Route::delete('/sounds/{sound}', [SoundController::class, 'destroy'])->name('sounds.destroy');
 
     Route::resource('characters', CharacterController::class);
+
+    // Compendium routes
+    Route::prefix('compendium')->name('compendium.')->group(function () {
+        Route::get('/', [CompendiumController::class, 'index'])->name('index');
+        Route::get('/spells', [CompendiumController::class, 'spells'])->name('spells');
+        Route::get('/items', [CompendiumController::class, 'items'])->name('items');
+        Route::get('/monsters', [CompendiumController::class, 'monsters'])->name('monsters');
+        Route::get('/races', [CompendiumController::class, 'races'])->name('races');
+        Route::get('/classes', [CompendiumController::class, 'classes'])->name('classes');
+        Route::get('/backgrounds', [CompendiumController::class, 'backgrounds'])->name('backgrounds');
+        Route::get('/feats', [CompendiumController::class, 'feats'])->name('feats');
+        Route::get('/{entry}', [CompendiumController::class, 'show'])->name('show');
+    });
 });
