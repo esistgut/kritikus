@@ -109,31 +109,34 @@ class CompendiumController extends Controller
     /**
      * Display the specified compendium entry
      */
-    public function show(CompendiumEntry $entry): Response
+    public function show(CompendiumEntry $compendium): Response
     {
         // Load the specific data based on entry type
-        $entry->load($this->getRelationshipName($entry->entry_type));
+        $relationshipName = $this->getRelationshipName($compendium->entry_type);
+        if ($relationshipName) {
+            $compendium->load($relationshipName);
+        }
 
         return Inertia::render('Compendium/Show', [
-            'entry' => $entry,
+            'entry' => $compendium,
         ]);
     }
 
     /**
      * Show the form for editing the specified compendium entry
      */
-    public function edit(CompendiumEntry $entry): Response
+    public function edit(CompendiumEntry $compendium): Response
     {
         // Only allow editing of user entries
-        if ($entry->is_system) {
+        if ($compendium->is_system) {
             abort(403, 'System entries cannot be edited.');
         }
 
         // Load the specific data
-        $entry->load($this->getRelationshipName($entry->entry_type));
+        $compendium->load($this->getRelationshipName($compendium->entry_type));
 
         return Inertia::render('Compendium/Form', [
-            'entry' => $entry,
+            'entry' => $compendium,
             'isEdit' => true,
         ]);
     }
@@ -141,10 +144,10 @@ class CompendiumController extends Controller
     /**
      * Update the specified compendium entry
      */
-    public function update(Request $request, CompendiumEntry $entry)
+    public function update(Request $request, CompendiumEntry $compendium)
     {
         // Only allow updating of user entries
-        if ($entry->is_system) {
+        if ($compendium->is_system) {
             abort(403, 'System entries cannot be modified.');
         }
 
@@ -156,9 +159,9 @@ class CompendiumController extends Controller
             'specific_data' => 'nullable|array',
         ]);
 
-        DB::transaction(function () use ($validated, $entry) {
+        DB::transaction(function () use ($validated, $compendium) {
             // Update the main entry
-            $entry->update([
+            $compendium->update([
                 'name' => $validated['name'],
                 'entry_type' => $validated['entry_type'],
                 'text' => $validated['text'],
@@ -166,23 +169,23 @@ class CompendiumController extends Controller
             ]);
 
             // Update the specific data
-            $this->updateSpecificData($entry, $validated['entry_type'], $validated['specific_data'] ?? []);
+            $this->updateSpecificData($compendium, $validated['entry_type'], $validated['specific_data'] ?? []);
         });
 
-        return redirect()->route('compendium.show', $entry)->with('success', 'Compendium entry updated successfully!');
+        return redirect()->route('compendium.show', $compendium)->with('success', 'Compendium entry updated successfully!');
     }
 
     /**
      * Remove the specified compendium entry
      */
-    public function destroy(CompendiumEntry $entry)
+    public function destroy(CompendiumEntry $compendium)
     {
         // Only allow deleting of user entries
-        if ($entry->is_system) {
+        if ($compendium->is_system) {
             abort(403, 'System entries cannot be deleted.');
         }
 
-        $entry->delete();
+        $compendium->delete();
 
         return redirect()->route('compendium.index')->with('success', 'Compendium entry deleted successfully!');
     }
@@ -252,8 +255,12 @@ class CompendiumController extends Controller
     /**
      * Get the relationship name for a given entry type
      */
-    private function getRelationshipName(string $entryType): string
+    private function getRelationshipName(?string $entryType): string
     {
+        if ($entryType === null) {
+            return '';
+        }
+
         return match($entryType) {
             'spell' => 'spell',
             'item' => 'item',
