@@ -25,6 +25,9 @@ export default function CharacterCard({ character, onDelete }: CharacterCardProp
             <div className="flex flex-wrap gap-1 mt-2">
               <Badge variant="secondary">{character.race?.name || 'Unknown Race'}</Badge>
               <Badge variant="outline">{character.character_class?.name || 'Unknown Class'}</Badge>
+              {character.subclass && (
+                <Badge variant="secondary">{character.subclass.name}</Badge>
+              )}
               <Badge variant="default">Level {character.level}</Badge>
             </div>
           </div>

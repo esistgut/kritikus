@@ -11,6 +11,7 @@ class Character extends Model
         'name',
         'race_id',
         'class_id',
+        'subclass_id',
         'background_id',
         'level',
         'experience',
@@ -119,6 +120,11 @@ class Character extends Model
     public function background()
     {
         return $this->belongsTo(CompendiumEntry::class, 'background_id');
+    }
+
+    public function subclass()
+    {
+        return $this->belongsTo(CompendiumEntry::class, 'subclass_id');
     }
 
     // Get selected spells

@@ -18,6 +18,7 @@ export interface CharacterFormData {
   name: string;
   race_id: number;
   class_id: number;
+  subclass_id: number | null;
   background_id: number;
   selected_spell_ids: number[];
   selected_feat_ids: number[];
@@ -74,6 +75,7 @@ const getDefaultFormData = (): CharacterFormData => ({
   name: "",
   race_id: 0,
   class_id: 0,
+  subclass_id: null,
   background_id: 0,
   selected_spell_ids: [],
   selected_feat_ids: [],
@@ -124,6 +126,7 @@ const getFormDataFromCharacter = (character: Character): CharacterFormData => ({
   name: character.name,
   race_id: character.race_id,
   class_id: character.class_id,
+  subclass_id: character.subclass_id || null,
   background_id: character.background_id,
   selected_spell_ids: character.selected_spell_ids || [],
   selected_feat_ids: character.selected_feat_ids || [],

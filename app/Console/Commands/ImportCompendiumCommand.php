@@ -8,6 +8,7 @@ use App\Models\CompendiumItem;
 use App\Models\CompendiumMonster;
 use App\Models\CompendiumRace;
 use App\Models\CompendiumDndClass;
+use App\Models\CompendiumSubclass;
 use App\Models\CompendiumBackground;
 use App\Models\CompendiumFeat;
 use Illuminate\Console\Command;
@@ -138,6 +139,20 @@ class ImportCompendiumCommand extends Command
                 $this->info("- {$type}s: {$count} would be imported");
             }
         }
+
+        // Count subclasses separately
+        $subclassCount = 0;
+        foreach ($xml->xpath('//class') as $class) {
+            $subclassCount += count($class->xpath('.//subclass'));
+        }
+        if ($subclassCount > 0) {
+            if ($this->option('update')) {
+                $existing = CompendiumEntry::where('entry_type', 'subclass')->where('is_system', true)->count();
+                $this->info("- subclasses: {$subclassCount} in XML, {$existing} existing system entries");
+            } else {
+                $this->info("- subclasses: {$subclassCount} would be imported");
+            }
+        }
     }
 
     private function cleanSystemData()
@@ -213,6 +228,7 @@ class ImportCompendiumCommand extends Command
             'monster' => 'monster',
             'race' => 'race',
             'class' => 'dndClass',
+            'subclass' => 'subclass',
             'background' => 'background',
             'feat' => 'feat',
             default => $entryType,
@@ -416,11 +432,105 @@ class ImportCompendiumCommand extends Command
             }, CompendiumDndClass::class);
 
             $this->updateImportStats($result);
+
+            // Import subclasses for this class
+            $this->importSubclassesForClass($class, $name);
+
             $progressBar->advance();
         }
 
         $progressBar->finish();
         $this->newLine();
+    }
+
+    private function importSubclassesForClass($classElement, $className)
+    {
+        // Find the parent class entry
+        $parentClassEntry = CompendiumEntry::where('name', $className)
+            ->where('entry_type', 'class')
+            ->where('is_system', true)
+            ->first();
+
+        if (!$parentClassEntry) {
+            return;
+        }
+
+        // In D&D 2024, subclasses are defined as features with specific naming patterns
+        // Look for features with names like "Barbarian Subclass: Path of the Wild Heart"
+        $subclassFeatures = $classElement->xpath('.//feature[@optional="YES" and contains(name, "Subclass:")]');
+
+        // Also look for features with patterns like "Primal Path: Path of the Giant"
+        $pathFeatures = $classElement->xpath('.//feature[@optional="YES" and (contains(name, "Path:") or contains(name, "Circle:") or contains(name, "College:") or contains(name, "Domain:") or contains(name, "School:") or contains(name, "Archetype:") or contains(name, "Tradition:") or contains(name, "Patron:") or contains(name, "Conclave:") or contains(name, "Oath:") or contains(name, "Way:"))]');
+
+        $allSubclassFeatures = array_merge($subclassFeatures, $pathFeatures);
+
+        $processedSubclasses = [];
+
+        foreach ($allSubclassFeatures as $feature) {
+            $featureName = (string) $feature->name;
+
+            // Extract subclass name from different patterns
+            $subclassName = null;
+            if (preg_match('/Subclass:\s*(.+)/', $featureName, $matches)) {
+                $subclassName = trim($matches[1]);
+            } elseif (preg_match('/(Path|Circle|College|Domain|School|Archetype|Tradition|Patron|Conclave|Oath|Way):\s*(.+)/', $featureName, $matches)) {
+                $subclassName = trim($matches[2]);
+            }
+
+            if (!$subclassName || in_array($subclassName, $processedSubclasses)) {
+                continue;
+            }
+
+            $processedSubclasses[] = $subclassName;
+
+            // Collect all features for this subclass
+            $subclassFeaturesList = [];
+            $subclassAutolevels = [];
+
+            // Find all features that belong to this subclass
+            $allFeatures = $classElement->xpath('.//feature[contains(name, "' . $subclassName . '")]');
+            foreach ($allFeatures as $subFeature) {
+                $subclassFeaturesList[] = [
+                    'name' => (string) $subFeature->name,
+                    'text' => (string) $subFeature->text,
+                ];
+            }
+
+            // Find autolevels that belong to this subclass
+            $autolevels = $classElement->xpath('.//autolevel[.//feature[contains(name, "' . $subclassName . '")] or .//counter/subclass[text()="' . $subclassName . '"]]');
+            foreach ($autolevels as $autolevel) {
+                $level = (int) $autolevel->attributes()->level;
+                if (!isset($subclassAutolevels[$level])) {
+                    $subclassAutolevels[$level] = [
+                        'level' => $level,
+                        'features' => [],
+                    ];
+                }
+
+                foreach ($autolevel->xpath('.//feature[contains(name, "' . $subclassName . '")]') as $levelFeature) {
+                    $subclassAutolevels[$level]['features'][] = [
+                        'name' => (string) $levelFeature->name,
+                        'text' => (string) $levelFeature->text,
+                    ];
+                }
+            }
+
+            $fullSubclassName = $subclassName . " (" . $className . ")";
+
+            $result = $this->createOrUpdateEntry($fullSubclassName, 'subclass', [
+                'text' => (string) $feature->text,
+                'source' => $this->extractSource((string) $feature->text),
+            ], function($entry) use ($subclassFeaturesList, $subclassAutolevels, $parentClassEntry) {
+                return [
+                    'compendium_entry_id' => $entry->id,
+                    'parent_class_id' => $parentClassEntry->id,
+                    'features' => $subclassFeaturesList,
+                    'autolevels' => $subclassAutolevels,
+                ];
+            }, CompendiumSubclass::class);
+
+            $this->updateImportStats($result);
+        }
     }
 
     private function importBackgrounds($xml)
@@ -516,6 +626,18 @@ class ImportCompendiumCommand extends Command
         return !empty($traits) ? $traits : null;
     }
 
+    private function extractFeatures($element): ?array
+    {
+        $features = [];
+        foreach ($element->xpath('.//feature') as $feature) {
+            $features[] = [
+                'name' => (string) $feature->name,
+                'text' => (string) $feature->text,
+            ];
+        }
+        return !empty($features) ? $features : null;
+    }
+
     private function extractActions($element): ?array
     {
         $actions = [];
@@ -560,7 +682,7 @@ class ImportCompendiumCommand extends Command
             $level = (int) $autolevel->attributes()->level;
             $autolevels[$level] = [
                 'level' => $level,
-                'features' => $this->extractTraits($autolevel),
+                'features' => $this->extractFeatures($autolevel),
             ];
         }
         return !empty($autolevels) ? $autolevels : null;

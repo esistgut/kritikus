@@ -21,6 +21,10 @@ class CompendiumEntry extends Model
         'is_system' => 'boolean',
     ];
 
+    protected $appends = [
+        'specific_data',
+    ];
+
     /**
      * Get the user who created this entry (null for system entries)
      */
@@ -86,6 +90,14 @@ class CompendiumEntry extends Model
     }
 
     /**
+     * Get the subclass details if this is a subclass entry
+     */
+    public function subclass(): HasOne
+    {
+        return $this->hasOne(CompendiumSubclass::class);
+    }
+
+    /**
      * Get the specific data based on entry type
      */
     public function getSpecificDataAttribute()
@@ -98,6 +110,7 @@ class CompendiumEntry extends Model
             'class' => $this->dndClass,
             'background' => $this->background,
             'feat' => $this->feat,
+            'subclass' => $this->subclass,
             default => null,
         };
     }

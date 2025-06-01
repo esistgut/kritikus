@@ -17,6 +17,7 @@ export interface Character {
     // Compendium references
     race_id: number;
     class_id: number;
+    subclass_id?: number | null;
     background_id: number;
     selected_spell_ids?: number[];
     selected_feat_ids?: number[];
@@ -25,6 +26,7 @@ export interface Character {
     // Compendium relations (populated by Laravel)
     race?: CompendiumEntry;
     character_class?: CompendiumEntry;
+    subclass?: CompendiumEntry;
     background?: CompendiumEntry;
     selectedSpells?: CompendiumEntry[];
     selectedFeats?: CompendiumEntry[];
@@ -155,7 +157,7 @@ export interface PageProps {
 export interface CompendiumEntry {
     id: number;
     name: string;
-    entry_type: 'spell' | 'item' | 'monster' | 'race' | 'class' | 'background' | 'feat';
+    entry_type: 'spell' | 'item' | 'monster' | 'race' | 'class' | 'background' | 'feat' | 'subclass';
     is_system: boolean;
     user_id?: number;
     text: string;
@@ -163,7 +165,7 @@ export interface CompendiumEntry {
     created_at: string;
     updated_at: string;
     specific_data?: any;
-    // Spell-specific relationship
+    // Specific relationships
     spell?: {
         id: number;
         compendium_entry_id: number;
@@ -179,6 +181,8 @@ export interface CompendiumEntry {
         created_at: string;
         updated_at: string;
     };
+    dnd_class?: CompendiumDndClass;
+    subclass?: CompendiumSubclass;
 }
 
 export interface CompendiumSpell {
@@ -207,13 +211,30 @@ export interface CompendiumRace {
     compendium_entry?: CompendiumEntry;
 }
 
+export interface CompendiumSubclass {
+    id: number;
+    compendium_entry_id: number;
+    parent_class_id: number;
+    features?: any[];
+    autolevels?: any[];
+    compendium_entry?: CompendiumEntry;
+}
+
 export interface CompendiumDndClass {
     id: number;
     compendium_entry_id: number;
     hd?: number;
-    proficiency?: string;
+    proficiency?: any;
     spellAbility?: string;
+    numSkills?: number;
+    armor?: any;
+    weapons?: any;
+    tools?: any;
+    wealth?: any;
+    autolevels?: any[];
+    traits?: any[];
     compendium_entry?: CompendiumEntry;
+    subclasses?: CompendiumSubclass[];
 }
 
 export interface CompendiumBackground {

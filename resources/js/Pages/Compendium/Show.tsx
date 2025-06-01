@@ -3,7 +3,8 @@ import AppLayout from '@/Layouts/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Edit, Trash2, Book, Sword, Users, Crown, Scroll, Zap, Target } from 'lucide-react';
+import { ArrowLeft, Edit, Trash2, Book, Sword, Users, Crown, Scroll, Zap, Target, Star } from 'lucide-react';
+import CompendiumFeatureDisplay from '@/components/CompendiumFeatureDisplay';
 
 interface CompendiumEntry {
     id: number;
@@ -27,6 +28,7 @@ const entryTypeConfig = {
     monster: { icon: Target, label: 'Monster', color: 'bg-red-500' },
     race: { icon: Users, label: 'Race', color: 'bg-blue-500' },
     class: { icon: Crown, label: 'Class', color: 'bg-green-500' },
+    subclass: { icon: Star, label: 'Subclass', color: 'bg-purple-600' },
     background: { icon: Book, label: 'Background', color: 'bg-indigo-500' },
     feat: { icon: Scroll, label: 'Feat', color: 'bg-orange-500' },
 };
@@ -36,6 +38,29 @@ export default function CompendiumShow({ entry }: CompendiumShowProps) {
     const Icon = typeConfig?.icon || Book;
 
     const renderSpecificData = () => {
+        // For classes without specific_data, still show a basic layout
+        if (!entry.specific_data && entry.entry_type === 'class') {
+            return (
+                <div className="space-y-6">
+                    <div>
+                        <h4 className="font-semibold mb-2">Class Information</h4>
+                        <p className="text-sm text-muted-foreground">
+                            This class entry doesn't have detailed mechanical data available, but you can find information in the description above.
+                        </p>
+                    </div>
+
+                    {/* Show features from the text if available */}
+                    <CompendiumFeatureDisplay
+                        entry={{
+                            name: entry.name,
+                            entry_type: entry.entry_type,
+                            specific_data: null
+                        }}
+                    />
+                </div>
+            );
+        }
+
         if (!entry.specific_data) return null;
 
         const data = entry.specific_data;
@@ -184,32 +209,54 @@ export default function CompendiumShow({ entry }: CompendiumShowProps) {
 
             case 'class':
                 return (
-                    <div>
-                        <h4 className="font-semibold mb-2">Class Features</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="space-y-2 text-sm">
-                                {data.hd && <div><strong>Hit Die:</strong> d{data.hd}</div>}
-                                {data.proficiency && <div><strong>Proficiencies:</strong> {data.proficiency}</div>}
-                                {data.numSkills && <div><strong>Skill Choices:</strong> {data.numSkills}</div>}
-                                {data.armor && <div><strong>Armor:</strong> {data.armor}</div>}
-                                {data.weapons && <div><strong>Weapons:</strong> {data.weapons}</div>}
-                                {data.tools && <div><strong>Tools:</strong> {data.tools}</div>}
-                                {data.wealth && <div><strong>Starting Wealth:</strong> {data.wealth}</div>}
-                                {data.spellAbility && <div><strong>Spellcasting Ability:</strong> {data.spellAbility}</div>}
-                            </div>
-                            {data.traits && data.traits.length > 0 && (
-                                <div>
-                                    <h5 className="font-medium mb-2">Class Features</h5>
-                                    <div className="space-y-2">
-                                        {data.traits.map((trait: any, index: number) => (
-                                            <div key={index} className="text-sm">
-                                                <strong>{trait.name}:</strong> {trait.text}
-                                            </div>
-                                        ))}
-                                    </div>
+                    <div className="space-y-6">
+                        <div>
+                            <h4 className="font-semibold mb-2">Class Information</h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-2 text-sm">
+                                    {data.hd && <div><strong>Hit Die:</strong> d{data.hd}</div>}
+                                    {data.proficiency && <div><strong>Proficiencies:</strong> {data.proficiency}</div>}
+                                    {data.numSkills && <div><strong>Skill Choices:</strong> {data.numSkills}</div>}
+                                    {data.armor && <div><strong>Armor:</strong> {data.armor}</div>}
+                                    {data.weapons && <div><strong>Weapons:</strong> {data.weapons}</div>}
+                                    {data.tools && <div><strong>Tools:</strong> {data.tools}</div>}
+                                    {data.wealth && <div><strong>Starting Wealth:</strong> {data.wealth}</div>}
+                                    {data.spellAbility && <div><strong>Spellcasting Ability:</strong> {data.spellAbility}</div>}
                                 </div>
-                            )}
+                            </div>
                         </div>
+
+                        {/* Detailed Features */}
+                        <CompendiumFeatureDisplay
+                            entry={{
+                                name: entry.name,
+                                entry_type: entry.entry_type,
+                                specific_data: data
+                            }}
+                        />
+                    </div>
+                );
+
+            case 'subclass':
+                return (
+                    <div className="space-y-6">
+                        <div>
+                            <h4 className="font-semibold mb-2">Subclass Information</h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-2 text-sm">
+                                    {data.parent_class_id && <div><strong>Parent Class:</strong> Available in database</div>}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Detailed Features */}
+                        <CompendiumFeatureDisplay
+                            entry={{
+                                name: entry.name,
+                                entry_type: entry.entry_type,
+                                specific_data: data
+                            }}
+                        />
                     </div>
                 );
 

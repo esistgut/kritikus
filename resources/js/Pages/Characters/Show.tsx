@@ -9,6 +9,7 @@ import { ArrowLeft, Edit, Trash2, Heart, Shield, Sparkles, Zap } from 'lucide-re
 import { router } from '@inertiajs/react';
 import { useState } from 'react';
 import SpellList from '@/components/Characters/SpellList';
+import ClassFeatures from '@/components/Characters/ClassFeatures';
 
 interface CharacterShowProps extends PageProps {
   character: Character;
@@ -113,6 +114,9 @@ export default function Show({ character }: CharacterShowProps) {
                 <div className="flex flex-wrap gap-2 mt-2">
                   <Badge variant="secondary">{character.race?.name || 'Unknown Race'}</Badge>
                   <Badge variant="outline">{character.character_class?.name || 'Unknown Class'}</Badge>
+                  {character.subclass && (
+                    <Badge variant="secondary">{character.subclass.name}</Badge>
+                  )}
                   <Badge variant="default">Level {character.level}</Badge>
                   <Badge variant="outline">{character.background?.name || 'Unknown Background'}</Badge>
                 </div>
@@ -254,6 +258,11 @@ export default function Show({ character }: CharacterShowProps) {
                     </CardContent>
                   </Card>
                 )}
+              </div>
+
+              {/* Class and Subclass Features */}
+              <div className="mt-6">
+                <ClassFeatures character={character} />
               </div>
             </TabsContent>
 

@@ -13,6 +13,10 @@ interface BasicInfoTabProps {
 }
 
 export default function BasicInfoTab({ data, setData, errors, compendiumData }: BasicInfoTabProps) {
+  // Get available subclasses for the selected class
+  const selectedClass = compendiumData.classes.find(cls => cls.compendium_entry_id === data.class_id);
+  const availableSubclasses = selectedClass?.subclasses || [];
+
   return (
     <Card>
       <CardHeader>
@@ -34,7 +38,11 @@ export default function BasicInfoTab({ data, setData, errors, compendiumData }: 
             <Label htmlFor="class">Class *</Label>
             <Select
               value={data.class_id ? data.class_id.toString() : ''}
-              onValueChange={(value) => setData('class_id', parseInt(value))}
+              onValueChange={(value) => {
+                setData('class_id', parseInt(value));
+                // Reset subclass when class changes
+                setData('subclass_id', null);
+              }}
               required
             >
               <SelectTrigger>
@@ -51,6 +59,30 @@ export default function BasicInfoTab({ data, setData, errors, compendiumData }: 
             {errors.class_id && <p className="text-sm text-destructive mt-1">{errors.class_id}</p>}
           </div>
         </div>
+
+        {/* Subclass selection - only show if class is selected and has subclasses */}
+        {data.class_id && availableSubclasses.length > 0 && (
+          <div>
+            <Label htmlFor="subclass">Subclass</Label>
+            <Select
+              value={data.subclass_id ? data.subclass_id.toString() : 'none'}
+              onValueChange={(value) => setData('subclass_id', value === 'none' ? null : parseInt(value))}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select a subclass (optional)" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">None</SelectItem>
+                {availableSubclasses.map((subclass) => (
+                  <SelectItem key={subclass.id} value={subclass.compendium_entry_id.toString()}>
+                    {subclass.compendium_entry?.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {errors.subclass_id && <p className="text-sm text-destructive mt-1">{errors.subclass_id}</p>}
+          </div>
+        )}
 
         <div className="grid grid-cols-2 gap-4">
           <div>

@@ -117,6 +117,9 @@ class CompendiumController extends Controller
             $compendium->load($relationshipName);
         }
 
+        // Ensure specific_data is explicitly included
+        $compendium->append('specific_data');
+
         return Inertia::render('Compendium/Show', [
             'entry' => $compendium,
         ]);

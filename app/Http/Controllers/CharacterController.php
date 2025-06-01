@@ -13,6 +13,7 @@ use App\Models\CompendiumItem;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Auth;
 
 class CharacterController extends Controller
 {
@@ -31,8 +32,8 @@ class CharacterController extends Controller
         $this->authorize('viewAny', Character::class);
 
         return Inertia::render('Characters/Index', [
-            'characters' => auth()->user()->characters()
-                ->with(['race', 'character_class', 'background'])
+            'characters' => Auth::user()->characters()
+                ->with(['race', 'character_class', 'subclass', 'background'])
                 ->orderBy('name')
                 ->get(),
         ]);
@@ -49,7 +50,7 @@ class CharacterController extends Controller
                     ->whereHas('compendiumEntry', function($q) {
                         $q->orderBy('name');
                     })->get(),
-                'classes' => CompendiumDndClass::with('compendiumEntry')
+                'classes' => CompendiumDndClass::with(['compendiumEntry', 'subclasses.compendiumEntry'])
                     ->whereHas('compendiumEntry', function($q) {
                         $q->orderBy('name');
                     })->get(),
@@ -82,6 +83,7 @@ class CharacterController extends Controller
             'name' => 'required|string|max:255',
             'race_id' => 'required|exists:compendium_entries,id',
             'class_id' => 'required|exists:compendium_entries,id',
+            'subclass_id' => 'nullable|exists:compendium_entries,id',
             'background_id' => 'required|exists:compendium_entries,id',
             'level' => 'integer|min:1|max:20',
             'experience' => 'integer|min:0',
@@ -131,7 +133,7 @@ class CharacterController extends Controller
             'selected_item_ids.*' => 'exists:compendium_entries,id',
         ]);
 
-        auth()->user()->characters()->create($validated);
+        Auth::user()->characters()->create($validated);
 
         return redirect()->route('characters.index')
             ->with('message', 'Character created successfully!');
@@ -144,8 +146,13 @@ class CharacterController extends Controller
     {
         $this->authorize('view', $character);
 
-        // Load the character with compendium relationships
-        $character->load(['race', 'character_class', 'background']);
+        // Load the character with compendium relationships and their specific data
+        $character->load([
+            'race',
+            'character_class.dndClass',
+            'subclass.subclass',
+            'background'
+        ]);
 
         // Add selected items as attributes
         $character->selectedSpells = $character->selectedSpells();
@@ -164,8 +171,13 @@ class CharacterController extends Controller
     {
         $this->authorize('update', $character);
 
-        // Load the character with compendium relationships
-        $character->load(['race', 'character_class', 'background']);
+        // Load the character with compendium relationships and their specific data
+        $character->load([
+            'race',
+            'character_class.dndClass',
+            'subclass.subclass',
+            'background'
+        ]);
 
         // Add selected items as attributes
         $character->selectedSpells = $character->selectedSpells();
@@ -179,7 +191,7 @@ class CharacterController extends Controller
                     ->whereHas('compendiumEntry', function($q) {
                         $q->orderBy('name');
                     })->get(),
-                'classes' => CompendiumDndClass::with('compendiumEntry')
+                'classes' => CompendiumDndClass::with(['compendiumEntry', 'subclasses.compendiumEntry'])
                     ->whereHas('compendiumEntry', function($q) {
                         $q->orderBy('name');
                     })->get(),
@@ -212,6 +224,7 @@ class CharacterController extends Controller
             'name' => 'required|string|max:255',
             'race_id' => 'required|exists:compendium_entries,id',
             'class_id' => 'required|exists:compendium_entries,id',
+            'subclass_id' => 'nullable|exists:compendium_entries,id',
             'background_id' => 'required|exists:compendium_entries,id',
             'level' => 'integer|min:1|max:20',
             'experience' => 'integer|min:0',
