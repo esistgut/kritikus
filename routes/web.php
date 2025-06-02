@@ -6,6 +6,7 @@ use App\Http\Controllers\CharacterController;
 use App\Http\Controllers\CompendiumController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\SoundController;
+use App\Http\Controllers\Api\CharacterCompendiumController;
 use Illuminate\Support\Facades\Route;
 
 // Authentication routes
@@ -36,4 +37,17 @@ Route::middleware('auto.auth')->group(function () {
 
     // Additional compendium API routes for character creation
     Route::get('/api/compendium/{type}', [CompendiumController::class, 'getByType'])->name('compendium.by-type');
+
+    // Character compendium API routes for dynamic loading
+    Route::prefix('api/character-compendium')->group(function () {
+        Route::get('/races', [CharacterCompendiumController::class, 'races'])->name('character-compendium.races');
+        Route::get('/classes', [CharacterCompendiumController::class, 'classes'])->name('character-compendium.classes');
+        Route::get('/backgrounds', [CharacterCompendiumController::class, 'backgrounds'])->name('character-compendium.backgrounds');
+        Route::get('/spells', [CharacterCompendiumController::class, 'spells'])->name('character-compendium.spells');
+        Route::get('/feats', [CharacterCompendiumController::class, 'feats'])->name('character-compendium.feats');
+        Route::get('/items', [CharacterCompendiumController::class, 'items'])->name('character-compendium.items');
+        Route::post('/selected-spells', [CharacterCompendiumController::class, 'selectedSpells'])->name('character-compendium.selected-spells');
+        Route::post('/selected-feats', [CharacterCompendiumController::class, 'selectedFeats'])->name('character-compendium.selected-feats');
+        Route::post('/selected-items', [CharacterCompendiumController::class, 'selectedItems'])->name('character-compendium.selected-items');
+    });
 });

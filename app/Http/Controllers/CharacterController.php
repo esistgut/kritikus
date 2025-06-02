@@ -44,34 +44,7 @@ class CharacterController extends Controller
      */
     public function create()
     {
-        return Inertia::render('Characters/Create', [
-            'compendiumData' => [
-                'races' => CompendiumRace::with('compendiumEntry')
-                    ->whereHas('compendiumEntry', function($q) {
-                        $q->orderBy('name');
-                    })->get(),
-                'classes' => CompendiumDndClass::with(['compendiumEntry', 'subclasses.compendiumEntry'])
-                    ->whereHas('compendiumEntry', function($q) {
-                        $q->orderBy('name');
-                    })->get(),
-                'backgrounds' => CompendiumBackground::with('compendiumEntry')
-                    ->whereHas('compendiumEntry', function($q) {
-                        $q->orderBy('name');
-                    })->get(),
-                'spells' => CompendiumSpell::with('compendiumEntry')
-                    ->whereHas('compendiumEntry', function($q) {
-                        $q->orderBy('name');
-                    })->get(),
-                'feats' => CompendiumFeat::with('compendiumEntry')
-                    ->whereHas('compendiumEntry', function($q) {
-                        $q->orderBy('name');
-                    })->get(),
-                'items' => CompendiumItem::with('compendiumEntry')
-                    ->whereHas('compendiumEntry', function($q) {
-                        $q->orderBy('name');
-                    })->get(),
-            ]
-        ]);
+        return Inertia::render('Characters/Create');
     }
 
     /**
@@ -186,32 +159,6 @@ class CharacterController extends Controller
 
         return Inertia::render('Characters/Edit', [
             'character' => $character,
-            'compendiumData' => [
-                'races' => CompendiumRace::with('compendiumEntry')
-                    ->whereHas('compendiumEntry', function($q) {
-                        $q->orderBy('name');
-                    })->get(),
-                'classes' => CompendiumDndClass::with(['compendiumEntry', 'subclasses.compendiumEntry'])
-                    ->whereHas('compendiumEntry', function($q) {
-                        $q->orderBy('name');
-                    })->get(),
-                'backgrounds' => CompendiumBackground::with('compendiumEntry')
-                    ->whereHas('compendiumEntry', function($q) {
-                        $q->orderBy('name');
-                    })->get(),
-                'spells' => CompendiumSpell::with('compendiumEntry')
-                    ->whereHas('compendiumEntry', function($q) {
-                        $q->orderBy('name');
-                    })->get(),
-                'feats' => CompendiumFeat::with('compendiumEntry')
-                    ->whereHas('compendiumEntry', function($q) {
-                        $q->orderBy('name');
-                    })->get(),
-                'items' => CompendiumItem::with('compendiumEntry')
-                    ->whereHas('compendiumEntry', function($q) {
-                        $q->orderBy('name');
-                    })->get(),
-            ]
         ]);
     }
 

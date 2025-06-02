@@ -1,15 +1,13 @@
-import { CompendiumData, PageProps } from '@/types';
+import { PageProps } from '@/types';
 import CharacterForm from '@/components/Characters/CharacterForm';
 
 interface CreateCharacterProps extends PageProps {
-  compendiumData: CompendiumData;
 }
 
-export default function Create({ compendiumData, auth }: CreateCharacterProps) {
+export default function Create({ auth }: CreateCharacterProps) {
   return (
     <CharacterForm
       mode="create"
-      compendiumData={compendiumData}
       auth={auth}
     />
   );

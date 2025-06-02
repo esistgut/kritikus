@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AppLayout from "@/Layouts/AppLayout";
-import { Character, CompendiumData, PageProps } from "@/types";
+import { Character, PageProps } from "@/types";
 import { Head, Link, useForm } from "@inertiajs/react";
 import { ArrowLeft, Save } from "lucide-react";
 import React, { useState } from "react";
@@ -67,7 +67,6 @@ export interface CharacterFormData {
 
 interface CharacterFormProps extends PageProps {
   character?: Character;
-  compendiumData: CompendiumData;
   mode: "create" | "edit";
 }
 
@@ -175,9 +174,10 @@ const getFormDataFromCharacter = (character: Character): CharacterFormData => ({
 
 export default function CharacterForm({
   character,
-  compendiumData,
   mode,
 }: CharacterFormProps) {
+
+
   // Get the tab parameter from URL
   const urlParams = new URLSearchParams(window.location.search);
   const initialTab = urlParams.get("tab") || "basic";
@@ -273,7 +273,6 @@ export default function CharacterForm({
                   data={data}
                   setData={setData}
                   errors={errors}
-                  compendiumData={compendiumData}
                 />
               </TabsContent>
 
@@ -289,7 +288,6 @@ export default function CharacterForm({
                 <SpellsTab
                   data={data}
                   setData={setData}
-                  compendiumData={compendiumData}
                 />
               </TabsContent>
 
@@ -297,7 +295,6 @@ export default function CharacterForm({
                 <InventoryTab
                   data={data}
                   setData={setData}
-                  compendiumData={compendiumData}
                 />
               </TabsContent>
 

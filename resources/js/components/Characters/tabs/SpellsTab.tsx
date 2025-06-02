@@ -1,20 +1,38 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { CompendiumData } from '@/types';
+import { CompendiumSpell } from '@/types';
 import { CharacterFormData } from '../CharacterForm';
 import SpellList from '../SpellList';
+import { useCompendiumData, useSelectedCompendiumData } from '@/hooks/useCompendiumHooks';
 
 interface SpellsTabProps {
   data: CharacterFormData;
   setData: (key: keyof CharacterFormData, value: any) => void;
-  compendiumData: CompendiumData;
 }
 
-export default function SpellsTab({ data, setData, compendiumData }: SpellsTabProps) {
+export default function SpellsTab({ data, setData }: SpellsTabProps) {
   const [spellSearchTerm, setSpellSearchTerm] = useState('');
+
+  // Load spells dynamically with search
+  const {
+    data: availableSpells,
+    loading: spellsLoading,
+    search: searchSpells,
+    hasMore,
+    loadMore
+  } = useCompendiumData<CompendiumSpell>('/api/character-compendium/spells', false);
+
+  // Load selected spells
+  const {
+    data: selectedSpellsData
+  } = useSelectedCompendiumData<CompendiumSpell>(
+    '/api/character-compendium/selected-spells',
+    data.selected_spell_ids,
+    'spells'
+  );
 
   const handleSpellSelection = (spellId: number, isSelected: boolean) => {
     if (isSelected) {
@@ -24,18 +42,10 @@ export default function SpellsTab({ data, setData, compendiumData }: SpellsTabPr
     }
   };
 
-  const filteredSpells = useMemo(() => {
-    return compendiumData.spells.filter(spell =>
-      spell.compendium_entry?.name.toLowerCase().includes(spellSearchTerm.toLowerCase())
-    );
-  }, [compendiumData.spells, spellSearchTerm]);
-
-  // Get selected spells with their full data
-  const selectedSpells = useMemo(() => {
-    return data.selected_spell_ids.map(spellId =>
-      compendiumData.spells.find(spell => spell.compendium_entry_id === spellId)
-    ).filter(spell => spell !== undefined);
-  }, [data.selected_spell_ids, compendiumData.spells]);
+  const handleSpellSearch = (term: string) => {
+    setSpellSearchTerm(term);
+    searchSpells(term); // Trigger search with new term
+  };
 
   return (
     <div className="space-y-6">
@@ -80,7 +90,7 @@ export default function SpellsTab({ data, setData, compendiumData }: SpellsTabPr
       {/* Selected Spells Section */}
       <SpellList
         title="Selected Spells"
-        spells={selectedSpells}
+        spells={selectedSpellsData}
         showRemoveButton={true}
         onRemoveSpell={(spellId) => handleSpellSelection(spellId, false)}
         emptyMessage="No spells selected. Choose spells from the 'Available Spells' section below."
@@ -94,14 +104,29 @@ export default function SpellsTab({ data, setData, compendiumData }: SpellsTabPr
           <div className="space-y-4">
             <div>
               <Input
-                placeholder="Search spells..."
+                placeholder="Search spells by name or school (e.g., 'fire', 'evocation')..."
                 value={spellSearchTerm}
-                onChange={(e) => setSpellSearchTerm(e.target.value)}
+                onChange={(e) => handleSpellSearch(e.target.value)}
               />
+              {spellSearchTerm && (
+                <p className="text-sm text-muted-foreground mt-1">
+                  Showing results for "{spellSearchTerm}"
+                </p>
+              )}
             </div>
 
+            {spellsLoading && (
+              <div className="text-center py-4">Loading spells...</div>
+            )}
+
             <div className="max-h-96 overflow-y-auto space-y-2">
-              {filteredSpells.map((spell) => {
+              {availableSpells.length === 0 && !spellsLoading && (
+                <div className="text-center py-8 text-muted-foreground">
+                  {spellSearchTerm ? `No spells found for "${spellSearchTerm}"` : 'Type to search for spells...'}
+                </div>
+              )}
+
+              {availableSpells.map((spell: CompendiumSpell) => {
                 const isSelected = data.selected_spell_ids.includes(spell.compendium_entry_id);
                 return (
                   <div
@@ -142,6 +167,18 @@ export default function SpellsTab({ data, setData, compendiumData }: SpellsTabPr
                   </div>
                 );
               })}
+
+              {hasMore && !spellsLoading && (
+                <div className="text-center py-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={loadMore}
+                  >
+                    Load More Results ({availableSpells.length} shown)
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
         </CardContent>
