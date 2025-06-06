@@ -162,7 +162,9 @@ export function useSelectedCompendiumData<T>(
       setError(null);
 
       try {
-        const response = await axios.post(endpoint, { [`${key}_ids`]: ids });
+        // Map plural key to singular parameter name
+        const paramKey = key.endsWith('s') ? key.slice(0, -1) + '_ids' : key + '_ids';
+        const response = await axios.post(endpoint, { [paramKey]: ids });
         setData(response.data[key] || []);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An error occurred');
