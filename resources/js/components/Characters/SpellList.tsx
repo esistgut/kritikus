@@ -129,10 +129,9 @@ export default function SpellList({
                     </div>
                     <div className="mt-3 text-sm">
                       <strong>Description:</strong>{" "}
-                      {spell.compendium_entry?.text?.substring(0, 150) ||
-                        "No description available."}
-                      {(spell.compendium_entry?.text?.length || 0) > 150 &&
-                        "..."}
+                      <div className="mt-1 leading-relaxed">
+                        {spell.compendium_entry?.text || "No description available."}
+                      </div>
                     </div>
                     {showRemoveButton && onRemoveSpell && (
                       <div className="mt-3">
